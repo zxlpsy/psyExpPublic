@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<title>颜色与位置反应实验</title>
+<style>
+  :root{
+    --blue: #8fbcdd;          /* 淡蓝色（可点击） */
+    --blue-active: #7aaed6;
+    --gray: #dcdcdc;          /* 淡灰色（不可点击） */
+    --gray-text: #9a9a9a;
+    --ink: #2f3437;
+    --line: #e6e6e6;
+    --red: #e05252;
+    --blue-dot: #3b7dd8;
+    --dot-gray: #e2e2e2;
+    --page: #ffffff;
+  }
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:#f4f5f6; color:var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    font-size:16px; line-height:1.7;
+    -webkit-text-size-adjust:100%;
+    -webkit-user-select:none; user-select:none;
+    overscroll-behavior:none;
+  }
+  body{
+    position:fixed; inset:0; overflow:hidden;
+    touch-action:manipulation;
+  }
+  #app{
+    height:100vh; height:100dvh;
+    max-width:480px; margin:0 auto; background:var(--page);
+    display:flex; flex-direction:column;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .page{ display:none; flex:1; min-height:0; flex-direction:column; }
+  .page.active{ display:flex; }
+  .scroll{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:22px 22px 8px; }
+  .bottom{ padding:12px 22px calc(18px + env(safe-area-inset-bottom)); border-top:1px solid var(--line); background:var(--page); }
+
+  h1{ font-size:19px; margin:0 0 14px; font-weight:600; }
+  h2{ font-size:17px; margin:20px 0 8px; font-weight:600; }
+  p{ margin:0 0 12px; color:#4a5054; }
+  .muted{ color:var(--gray-text); font-size:13px; }
+  .card{ border:1px solid var(--line); border-radius:10px; padding:14px 14px 4px; margin-bottom:16px; background:#fcfcfd; }
+
+  .btn{
+    display:block; width:100%; border:none; border-radius:10px;
+    padding:15px 0; font-size:17px; color:#fff; background:var(--gray);
+    text-align:center; font-family:inherit;
+  }
+  .btn.on{ background:var(--blue); }
+  .btn.on:active{ background:var(--blue-active); }
+  .btn[disabled]{ pointer-events:none; }
+
+  .check{ display:flex; align-items:flex-start; gap:10px; border:1px solid var(--line); border-radius:10px; padding:13px 14px; margin:4px 0 16px; background:#fcfcfd;}
+  .box{
+    flex:0 0 auto; width:22px; height:22px; margin-top:2px; border:1px solid #b9bfc3; border-radius:5px; background:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:15px; color:#fff; line-height:1;
+  }
+  .check.on .box{ background:var(--blue-active); border-color:var(--blue-active); }
+
+  .field{ margin-bottom:22px; }
+  .label{ font-size:15px; color:#4a5054; margin-bottom:10px; }
+  .age-val{ font-size:30px; font-weight:600; color:var(--ink); }
+  .age-val.unset{ color:#c3c8cc; font-size:20px; font-weight:500; }
+  input[type=range]{
+    width:100%; margin:6px 0 2px; accent-color:var(--blue-active);
+    height:34px;
+  }
+  .scale{ display:flex; justify-content:space-between; color:var(--gray-text); font-size:12px; }
+
+  .opts{ display:flex; gap:10px; }
+  .opt{
+    flex:1; text-align:center; border:1px solid var(--line); border-radius:10px; padding:13px 0;
+    background:#fcfcfd; color:#4a5054; font-size:16px;
+  }
+  .opt.sel{ border-color:var(--blue-active); background:#eef5fa; color:#2f3437; }
+
+  /* ---- 试次页面 ---- */
+  .topbar{ flex:0 0 auto; padding:10px 18px 0; }
+  .bar{ height:4px; background:#eeeeee; border-radius:2px; overflow:hidden; }
+  .bar > i{ display:block; height:100%; width:0; background:var(--blue-active); }
+  .stage{
+    flex:1; min-height:0; display:flex; align-items:center; justify-content:center;
+    position:relative; padding:0 22px;
+  }
+  .fix{ width:12px; height:12px; border-radius:50%; background:#b9bfc3; display:none; }
+  .dots{ display:none; width:100%; align-items:center; justify-content:space-between; }
+  .dot{ width:66px; height:66px; border-radius:50%; background:var(--dot-gray); flex:0 0 auto; }
+  .fix.show{ display:block; }
+  .dots.show{ display:flex; }
+  .msg{ display:none; font-size:19px; text-align:center; color:#3a4043; padding:0 10px; }
+  .msg.show{ display:block; }
+  .fb{ position:absolute; left:0; right:0; bottom:8px; text-align:center; font-size:16px; display:none; }
+  .fb.show{ display:block; }
+  .fb.ok{ color:#4b9c6d; } .fb.no{ color:#cf5b5b; }
+
+  .resp{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+    padding:6px 26px calc(20px + env(safe-area-inset-bottom));
+  }
+  .rbtn{
+    width:92px; height:92px; border-radius:50%; border:1px solid #d5d5d5; background:#f2f3f4;
+  }
+  .rbtn.press{ background:#e2e6e8; }
+  .resp.off{ opacity:.35; pointer-events:none; }
+
+  /* ---- 结束页 ---- */
+  table{ width:100%; border-collapse:collapse; font-size:14px; margin:6px 0 4px; }
+  th,td{ border-bottom:1px solid var(--line); padding:9px 4px; text-align:left; }
+  th{ color:#6b7175; font-weight:500; }
+  td.num{ text-align:right; font-variant-numeric:tabular-nums; }
+  textarea{ width:100%; height:130px; font-size:12px; border:1px solid var(--line); border-radius:8px; padding:8px; color:#4a5054; }
+  details{ margin-top:14px; }
+  summary{ font-size:14px; color:#6b7175; }
+  .gap{ height:12px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ① 知情同意 -->
+  <section id="p-consent" class="page active">
+    <div class="scroll">
+      <h1>知情同意书</h1>
+      <div class="card">
+        <p>您好，欢迎参加本实验。</p>
+        <p>本研究为<strong>大学课程作业</strong>，由心理学课程的学生组织实施，用于课程作业中的数据分析与报告撰写。</p>
+        <p>· <strong>任务内容</strong>：完成一个简单的颜色判断反应任务，全程约需 5 分钟，只用手指点击屏幕作答。</p>
+        <p>· <strong>匿名性</strong>：不收集姓名、手机号、账号、位置等任何可识别您身份的信息，数据完全匿名。</p>
+        <p>· <strong>自愿参与</strong>：是否参加完全出于自愿。您在任意时刻都可以直接关闭本页面退出实验，不会产生任何不良影响。</p>
+        <p>· <strong>数据用途</strong>：数据仅用于本课程作业，不作任何其他用途，不会上传服务器。</p>
+        <p>· <strong>风险说明</strong>：本任务无明显风险。若感到疲劳或不适，请随时停止。</p>
+      </div>
+      <p class="muted">勾选下方选项即表示：您已阅读并理解以上内容，且同意参加本研究。</p>
+      <div class="check" id="consentCheck">
+        <div class="box">✓</div>
+        <div>我已阅读上述内容，并同意参加本研究</div>
+      </div>
+    </div>
+    <div class="bottom">
+      <button class="btn" id="btnConsent" disabled>下一步</button>
+    </div>
+  </section>
+
+  <!-- ② 人口学信息 -->
+  <section id="p-info" class="page">
+    <div class="scroll">
+      <h1>基本信息</h1>
+      <p class="muted">请填写以下两项信息，数据仅用于课程作业统计。</p>
+
+      <div class="field">
+        <div class="label">年龄</div>
+        <div class="age-val unset" id="ageVal">请拖动选择</div>
+        <input type="range" id="ageRange" min="0" max="99" step="1" value="0">
+        <div class="scale"><span>0 岁</span><span>99 岁</span></div>
+      </div>
+
+      <div class="field">
+        <div class="label">性别</div>
+        <div class="opts" id="genderOpts">
+          <div class="opt" data-v="男">男</div>
+          <div class="opt" data-v="女">女</div>
+          <div class="opt" data-v="不愿透露">不愿透露</div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom">
+      <button class="btn" id="btnStart" disabled>开始测试</button>
+    </div>
+  </section>
+
+  <!-- 指导语 -->
+  <section id="p-guide" class="page">
+    <div class="scroll">
+      <h1>任务说明</h1>
+      <div class="card">
+        <p>屏幕上会固定显示两个圆点：<strong>左边一个、右边一个</strong>。其中一个是<strong>红色</strong>或<strong>蓝色</strong>，另一个是淡灰色（灰色圆点请忽略）。</p>
+        <p>规则只有两条：</p>
+        <p>· 看到<span style="color:var(--red);font-weight:600;">红色</span>圆点 → 点击<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--red);vertical-align:-2px;"></span> 时，按<strong>左侧</strong>按钮</p>
+        <p>· 看到<span style="color:var(--blue-dot);font-weight:600;">蓝色</span>圆点 → 点击<strong>右侧</strong>按钮</p>
+        <p>请注意：圆点出现在屏幕的<strong>左边还是右边完全不重要</strong>，请只看颜色，越快越准越好。</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 18px 14px;">
+          <div><div style="width:44px;height:44px;border-radius:50%;background:var(--red);margin:0 auto;"></div><div class="muted" style="margin-top:6px;">左</div></div>
+          <div><div style="width:44px;height:44px;border-radius:50%;background:var(--dot-gray);margin:0 auto;"></div><div class="muted" style="margin-top:6px;">右</div></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 8px;">
+          <div><div style="width:56px;height:56px;border-radius:50%;border:1px solid #d5d5d5;background:#f2f3f4;margin:0 auto;"></div><div class="muted" style="margin-top:6px;">左侧按钮</div></div>
+          <div><div style="width:56px;height:56px;border-radius:50%;border:1px solid #d5d5d5;background:#f2f3f4;margin:0 auto;"></div><div class="muted" style="margin-top:6px;">右侧按钮</div></div>
+        </div>
+        <p class="muted" style="margin-top:12px;">示例：红色圆点在左侧 → 点左侧按钮</p>
+      </div>
+      <p class="muted">先做 8 个练习试次，练习会有对错提示；之后进入正式实验。</p>
+    </div>
+    <div class="bottom">
+      <button class="btn on" id="btnPractice">开始练习</button>
+    </div>
+  </section>
+
+  <!-- ③④⑤ 试次页面 -->
+  <section id="p-trial" class="page">
+    <div class="topbar"><div class="bar"><i id="barFill"></i></div></div>
+    <div class="stage">
+      <div class="fix" id="fix"></div>
+      <div class="dots" id="dots">
+        <div class="dot" id="dotL"></div>
+        <div class="dot" id="dotR"></div>
+      </div>
+      <div class="msg" id="msg"></div>
+      <div class="fb" id="fb"></div>
+    </div>
+    <div class="resp off" id="resp">
+      <button class="rbtn" id="btnL" aria-label="左侧按钮"></button>
+      <button class="rbtn" id="btnR" aria-label="右侧按钮"></button>
+    </div>
+  </section>
+
+  <!-- 阶段过渡 -->
+  <section id="p-break" class="page">
+    <div class="scroll">
+      <h1 id="breakTitle">练习结束</h1>
+      <div class="card" id="breakBody"></div>
+      <p class="muted" id="breakTip"></p>
+    </div>
+    <div class="bottom">
+      <button class="btn on" id="btnBreak">开始正式实验</button>
+    </div>
+  </section>
+
+  <!-- ⑥ 结束与事后释疑 -->
+  <section id="p-end" class="page">
+    <div class="scroll">
+      <h1>实验结束，感谢参与</h1>
+      <div class="card">
+        <h2 style="margin-top:4px;">事后释疑</h2>
+        <p>本实验是心理学中经典的<strong>西蒙任务（Simon Task）</strong>，用于研究<strong>刺激–反应相容性效应</strong>。</p>
+        <p>任务要求您只按圆点<strong>颜色</strong>反应，完全忽略圆点出现的<strong>位置</strong>。但事实上，当圆点位置与要按的按钮<strong>不在同一侧</strong>（不相容试次）时，人的反应通常会<strong>变慢、更容易出错</strong>；两者在同一侧（相容试次）时反应更快。</p>
+        <p>这说明：即使位置信息与任务无关，它仍会被自动加工，并干扰我们的反应。这就是<strong>西蒙效应</strong>。</p>
+        <p>本研究为课程作业，数据匿名，仅用于课程作业分析。</p>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:4px;">您的结果</h2>
+        <table id="statTable"></table>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:4px;">数据下载</h2>
+        <p class="muted">数据只保存在您自己的手机上，不会上传到任何服务器。请点击下方按钮下载 CSV 文件，并手动发送给研究者。</p>
+        <button class="btn on" id="btnCsv">下载数据文件（CSV）</button>
+        <details>
+          <summary>若下载失败，点此手动复制数据</summary>
+          <div class="gap"></div>
+          <textarea id="csvText" readonly></textarea>
+        </details>
+      </div>
+      <div class="gap"></div>
+    </div>
+    <div class="bottom">
+      <button class="btn on" id="btnRestart">重新开始</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ============ 工具 ============ */
+  var $ = function(id){ return document.getElementById(id); };
+  function show(id){
+    var ps = document.querySelectorAll('.page');
+    for (var i=0;i<ps.length;i++) ps[i].classList.remove('active');
+    $(id).classList.add('active');
+  }
+  function shuffle(a){
+    for (var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function rand(a,b){ return a + Math.random()*(b-a); }
+  function now(){ return (window.performance && performance.now) ? performance.now() : Date.now(); }
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function stamp(d){
+    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  }
+  var timer = null;
+  function later(fn, ms){ clearTimeout(timer); timer = setTimeout(fn, ms); }
+  function clearTimer(){ clearTimeout(timer); timer = null; }
+
+  /* ============ 参数 ============ */
+  var N_PRACTICE = 8;      // 练习试次
+  var N_FORMAL   = 60;     // 正式试次（相容/不相容各 30）
+  var FIX_MS     = 500;    // 注视点
+  var LIMIT_MS   = 2500;   // 作答时限
+  var FB_MS      = 750;    // 练习反馈
+  var ITI_MS     = [400, 700];
+
+  var COLOR_NAME = { red:'红色', blue:'蓝色' };
+  var SIDE_NAME  = { left:'左', right:'右' };
+  var COLOR_CSS  = { red:'#e05252', blue:'#3b7dd8' };
+
+  /* ============ 状态 ============ */
+  var S = {
+    age:null, gender:null,
+    phase:'练习',
+    trials:[], idx:0,
+    rows:[],
+    trial:null,
+    onset:0, awaiting:false,
+    startTime:null, endTime:null,
+    attnPassed:null, attnSide:'right'
+  };
+  var metaLines = [];
+
+  /* ============ 生成试次 ============ */
+  function mkTrial(type, color, pos, correct){
+    return { type:type, color:color, pos:pos, correct:correct };
+  }
+  function buildTrials(n, withAttention){
+    var arr = [], q = n/4, i;
+    for (i=0;i<q;i++){                       // 相容：红色在左、蓝色在右
+      arr.push(mkTrial('相容','red','left','left'));
+      arr.push(mkTrial('相容','blue','right','right'));
+    }
+    for (i=0;i<q;i++){                       // 不相容：红色在右、蓝色在左
+      arr.push(mkTrial('不相容','red','right','left'));
+      arr.push(mkTrial('不相容','blue','left','right'));
+    }
+    shuffle(arr);
+    if (withAttention){
+      S.attnSide = Math.random() < 0.5 ? 'left' : 'right';
+      var at = Math.floor(rand(n*0.4, n*0.7));
+      arr.splice(at, 0, mkTrial('注意力检查', null, null, S.attnSide));
+    }
+    return arr;
+  }
+
+  /* ============ 试次运行 ============ */
+  function startPhase(phase, trials){
+    S.phase = phase; S.trials = trials; S.idx = 0;
+    show('p-trial');
+    nextTrial();
+  }
+  function nextTrial(){
+    clearTimer();
+    if (S.idx >= S.trials.length){ endPhase(); return; }
+    $('barFill').style.width = (S.idx / S.trials.length * 100) + '%';
+    S.trial = S.trials[S.idx];
+    S.awaiting = false;
+
+    $('dots').classList.remove('show');
+    $('msg').classList.remove('show');
+    $('fb').classList.remove('show');
+    $('resp').classList.add('off');
+    $('fix').classList.add('show');
+
+    later(present, FIX_MS + Math.round(rand(0,200)));
+  }
+  function present(){
+    var t = S.trial;
+    $('fix').classList.remove('show');
+    if (t.type === '注意力检查'){
+      $('msg').textContent = '注意力检查：请点击【' + SIDE_NAME[t.correct] + '侧】按钮';
+      $('msg').classList.add('show');
+    } else {
+      var gray = t.pos === 'left' ? 'R' : 'L';
+      $('dotL').style.background = gray === 'L' ? '#e2e2e2' : COLOR_CSS[t.color];
+      $('dotR').style.background = gray === 'R' ? '#e2e2e2' : COLOR_CSS[t.color];
+      $('dots').classList.add('show');
+    }
+    requestAnimationFrame(function(){
+      S.onset = now();
+      S.awaiting = true;
+      $('resp').classList.remove('off');
+      later(onTimeout, LIMIT_MS);
+    });
+  }
+  function onTimeout(){
+    if (!S.awaiting) return;
+    S.awaiting = false;
+    $('resp').classList.add('off');
+    record(null, null);
+    finishTrial('未作答');
+  }
+  function respond(side){
+    if (!S.awaiting) return;
+    S.awaiting = false;
+    clearTimer();
+    var rt = Math.round(now() - S.onset);
+    $('resp').classList.add('off');
+    var t = S.trial;
+    var ok = (side === t.correct);
+    record(side, rt);
+    if (t.type === '注意力检查') S.attnPassed = ok;
+    finishTrial(S.phase === '练习' ? (ok ? '正确' : '错误') : null);
+  }
+  function finishTrial(fbText){
+    var delay = 0;
+    if (S.phase === '练习' || S.trial.type === '注意力检查'){
+      var f = $('fb');
+      if (S.trial.type === '注意力检查'){
+        f.textContent = (S.attnPassed ? '已记录' : '注意：请按屏幕提示作答');
+        f.className = 'fb show ' + (S.attnPassed ? 'ok' : 'no');
+      } else {
+        f.textContent = fbText;
+        f.className = 'fb show ' + (fbText === '正确' ? 'ok' : 'no');
+      }
+      delay = FB_MS;
+    }
+    S.idx++;
+    later(function(){
+      $('fb').classList.remove('show');
+      $('dots').classList.remove('show');
+      $('msg').classList.remove('show');
+      nextTrial();
+    }, delay + Math.round(rand(ITI_MS[0], ITI_MS[1])));
+  }
+  function record(side, rt){
+    var t = S.trial;
+    var isAttn = (t.type === '注意力检查');
+    var correct = (side === null) ? '未作答' : (side === t.correct ? '正确' : '错误');
+    S.rows.push({
+      phase: S.phase,
+      no: S.idx + 1,
+      type: t.type,
+      color: isAttn ? '—' : COLOR_NAME[t.color],
+      pos: isAttn ? '—' : SIDE_NAME[t.pos],
+      correctSide: SIDE_NAME[t.correct],
+      respSide: side ? SIDE_NAME[side] : '未作答',
+      acc: correct,
+      rt: (rt === null || rt === undefined) ? '—' : rt
+    });
+  }
+
+  /* ============ 阶段结束 ============ */
+  function endPhase(){
+    clearTimer();
+    $('resp').classList.add('off');
+    if (S.phase === '练习'){
+      var pr = S.rows.filter(function(r){ return r.phase === '练习'; });
+      var okN = pr.filter(function(r){ return r.acc === '正确'; }).length;
+      var rts = pr.filter(function(r){ return r.acc === '正确'; }).map(function(r){ return r.rt; });
+      var avg = rts.length ? Math.round(rts.reduce(function(a,b){return a+b;},0)/rts.length) : 0;
+      $('breakTitle').textContent = '练习结束';
+      $('breakBody').innerHTML =
+        '<p>练习正确率：<strong>' + Math.round(okN/pr.length*100) + '%</strong>（' + okN + ' / ' + pr.length + '）</p>' +
+        '<p>练习平均反应时：<strong>' + avg + ' 毫秒</strong></p>';
+      $('breakTip').textContent = '如果还不熟悉规则，可以重新开始；确认理解后请进入正式实验。正式实验没有对错提示，请又快又准地作答。';
+      $('btnBreak').textContent = '开始正式实验';
+      $('btnBreak').onclick = function(){
+        startPhase('正式', buildTrials(N_FORMAL, true));
+      };
+      show('p-break');
+    } else {
+      S.endTime = new Date();
+      renderEnd();
+      show('p-end');
+    }
+  }
+
+  /* ============ 结束页 ============ */
+  function stat(list){
+    var ok = list.filter(function(r){ return r.acc === '正确'; });
+    var rts = ok.map(function(r){ return r.rt; }).filter(function(v){ return typeof v === 'number'; });
+    return {
+      n: list.length,
+      acc: list.length ? ok.length/list.length : 0,
+      rt: rts.length ? rts.reduce(function(a,b){return a+b;},0)/rts.length : null
+    };
+  }
+  function renderEnd(){
+    var formal = S.rows.filter(function(r){ return r.phase === '正式' && r.type !== '注意力检查'; });
+    var cong = formal.filter(function(r){ return r.type === '相容'; });
+    var inco = formal.filter(function(r){ return r.type === '不相容'; });
+    var a = stat(cong), b = stat(inco), all = stat(formal);
+    var eff = (a.rt !== null && b.rt !== null) ? Math.round(b.rt - a.rt) : null;
+    var ms = function(v){ return v === null ? '—' : Math.round(v) + ' 毫秒'; };
+    $('statTable').innerHTML =
+      '<tr><th>项目</th><th style="text-align:right">结果</th></tr>' +
+      '<tr><td>总体正确率</td><td class="num">' + Math.round(all.acc*100) + '%（' + Math.round(all.acc*all.n) + ' / ' + all.n + '）</td></tr>' +
+      '<tr><td>相容试次平均反应时</td><td class="num">' + ms(a.rt) + '</td></tr>' +
+      '<tr><td>不相容试次平均反应时</td><td class="num">' + ms(b.rt) + '</td></tr>' +
+      '<tr><td>西蒙效应（不相容 − 相容）</td><td class="num">' + (eff === null ? '—' : eff + ' 毫秒') + '</td></tr>' +
+      '<tr><td>注意力检查</td><td class="num">' + (S.attnPassed === null ? '未完成' : (S.attnPassed ? '通过' : '未通过')) + '</td></tr>';
+    $('csvText').value = buildCsv();
+  }
+
+  function csvCell(v){
+    var s = String(v);
+    if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0){
+      return '"' + s.replace(/"/g,'""') + '"';
+    }
+    return s;
+  }
+  function buildCsv(){
+    var L = [];
+    L.push('西蒙任务（Simon Task）实验数据');
+    L.push('导出时间,' + stamp(new Date()));
+    L.push('知情同意,已同意');
+    L.push('年龄,' + (S.age === null ? '' : S.age));
+    L.push('性别,' + (S.gender || ''));
+    L.push('实验开始时间,' + (S.startTime ? stamp(S.startTime) : ''));
+    L.push('实验结束时间,' + (S.endTime ? stamp(S.endTime) : ''));
+    L.push('注意：数据未上传服务器，由被试手动发送给研究者');
+    L.push('');
+    L.push('阶段,试次序号,试次类型,圆点颜色,圆点位置,正确按键,实际按键,是否正确,反应时(毫秒)');
+    for (var i=0;i<S.rows.length;i++){
+      var r = S.rows[i];
+      L.push([r.phase, r.no, r.type, r.color, r.pos, r.correctSide, r.respSide, r.acc, r.rt].map(csvCell).join(','));
+    }
+    L.push('');
+    L.push('说明,反应时为刺激呈现到手指按下按钮的时间；"—"表示未作答或该试次不适用');
+    return '\ufeff' + L.join('\r\n');
+  }
+  function download(){
+    var csv = buildCsv();
+    try{
+      var blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = '西蒙任务数据_' + stamp(new Date()).replace(/[-: ]/g,'') + '.csv';
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+    } catch(e){
+      $('csvText').value = csv;
+      alert('如无法下载，请展开下方“手动复制数据”复制内容。');
+    }
+  }
+
+  /* ============ ① 知情同意 ============ */
+  var agreed = false;
+  $('consentCheck').addEventListener('click', function(){
+    agreed = !agreed;
+    this.classList.toggle('on', agreed);
+    var b = $('btnConsent');
+    b.classList.toggle('on', agreed);
+    b.disabled = !agreed;
+  });
+  $('btnConsent').addEventListener('click', function(){
+    if (!agreed) return;
+    show('p-info');
+  });
+
+  /* ============ ② 人口学信息 ============ */
+  var ageTouched = false;
+  $('ageRange').addEventListener('input', function(){
+    ageTouched = true;
+    S.age = parseInt(this.value, 10);
+    var v = $('ageVal');
+    v.textContent = S.age + ' 岁';
+    v.classList.remove('unset');
+    refreshStart();
+  });
+  $('genderOpts').addEventListener('click', function(e){
+    var el = e.target.closest ? e.target.closest('.opt') : null;
+    if (!el) return;
+    var opts = this.querySelectorAll('.opt');
+    for (var i=0;i<opts.length;i++) opts[i].classList.remove('sel');
+    el.classList.add('sel');
+    S.gender = el.getAttribute('data-v');
+    refreshStart();
+  });
+  function refreshStart(){
+    var ready = ageTouched && !!S.gender;
+    var b = $('btnStart');
+    b.classList.toggle('on', ready);
+    b.disabled = !ready;
+  }
+  $('btnStart').addEventListener('click', function(){
+    if (!ageTouched || !S.gender) return;
+    S.startTime = new Date();
+    show('p-guide');
+  });
+
+  /* ============ 指导语 → 练习 ============ */
+  $('btnPractice').addEventListener('click', function(){
+    startPhase('练习', buildTrials(N_PRACTICE, false));
+  });
+
+  /* ============ 作答按钮 ============ */
+  function bindResp(btn, side){
+    btn.addEventListener('pointerdown', function(e){
+      e.preventDefault();
+      btn.classList.add('press');
+      respond(side);
+    });
+    var up = function(){ btn.classList.remove('press'); };
+    btn.addEventListener('pointerup', up);
+    btn.addEventListener('pointercancel', up);
+    btn.addEventListener('pointerleave', up);
+    btn.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  }
+  bindResp($('btnL'), 'left');
+  bindResp($('btnR'), 'right');
+
+  /* ============ 结束页按钮 ============ */
+  $('btnCsv').addEventListener('click', download);
+  $('btnRestart').addEventListener('click', function(){ location.reload(); });
+
+  /* ============ 禁止缩放 / 双击放大 ============ */
+  document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+  var lastTouch = 0;
+  document.addEventListener('touchend', function(e){
+    var t = Date.now();
+    if (t - lastTouch < 300) e.preventDefault();
+    lastTouch = t;
+  }, { passive:false });
+  document.addEventListener('touchmove', function(e){
+    if (e.touches.length > 1) e.preventDefault();
+  }, { passive:false });
+})();
+</script>
+</body>
+</html>

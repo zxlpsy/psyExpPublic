@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>心理学实验</title>
+<style>
+  :root{ --blue:#8fbcdd; --ink:#2f3437; --line:#e6e6e6; --muted:#9a9a9a; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{
+    margin:0; padding:24px 20px calc(24px + env(safe-area-inset-bottom));
+    font-family:-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+    color:var(--ink); line-height:1.7; background:#fff; -webkit-text-size-adjust:100%;
+  }
+  .wrap{ max-width:480px; margin:0 auto; }
+  h1{ font-size:19px; font-weight:600; margin:0 0 6px; }
+  .sub{ color:var(--muted); font-size:13px; margin-bottom:20px; }
+  a{
+    display:block; text-decoration:none; color:inherit;
+    border:1px solid var(--line); border-radius:10px; padding:15px 16px; margin-bottom:12px; background:#fcfcfd;
+  }
+  a:active{ background:#eef5fa; border-color:var(--blue); }
+  .t{ font-size:16px; }
+  .d{ color:var(--muted); font-size:13px; margin-top:2px; }
+  footer{ color:var(--muted); font-size:12px; margin-top:24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>心理学实验</h1>
+  <div class="sub">请点击要参加的实验（建议使用手机浏览器）</div>
+
+  <a href="./01-SimonTask/index.html">
+    <div class="t">01 西蒙任务（Simon Task）</div>
+    <div class="d">颜色判断反应任务，约 5 分钟</div>
+  </a>
+
+  <footer>本页仅用于课程作业，数据不会上传服务器。</footer>
+</div>
+</body>
+</html>
