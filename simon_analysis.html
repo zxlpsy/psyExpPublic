@@ -434,7 +434,9 @@ function svgEffectChart(subjects,group){
   const W=460,H=310,L=64,R=20,T=26,B=40;
   const w=W-L-R,h=H-T-B;
   const vals=subjects.map(s=>s.simon);
-  let ymax=Math.max(...vals,group.simon,10),ymin=Math.min(...vals,group.simon,-10);
+  const ciOK=isFinite(group.ciLo)&&isFinite(group.ciHi);
+  let ymax=Math.max(...vals,group.simon,10,ciOK?group.ciHi:-Infinity),
+      ymin=Math.min(...vals,group.simon,-10,ciOK?group.ciLo:Infinity);
   const pad=(ymax-ymin)*0.2||10;ymax+=pad;ymin-=pad;
   const yv=v=>T+h-(v-ymin)/(ymax-ymin)*h;
   const ticks=niceTicks(ymin,ymax,5);
@@ -443,6 +445,11 @@ function svgEffectChart(subjects,group){
   ticks.forEach(v=>{s+='<line x1="'+L+'" y1="'+yv(v)+'" x2="'+(L+w)+'" y2="'+yv(v)+'" stroke="#e5e7eb"/>';
     s+='<text x="'+(L-8)+'" y="'+(yv(v)+4)+'" text-anchor="end" font-size="11" fill="#6b7280">'+F0(v)+'</text>';});
   s+='<line x1="'+L+'" y1="'+yv(0)+'" x2="'+(L+w)+'" y2="'+yv(0)+'" stroke="#374151" stroke-width="1.2"/>';
+  if(ciOK){
+    const yTop=yv(Math.min(group.ciHi,ymax)),yBot=yv(Math.max(group.ciLo,ymin));
+    s+='<rect x="'+L+'" y="'+yTop+'" width="'+w+'" height="'+Math.max(1,yBot-yTop)+'" fill="#7c3aed" opacity="0.10"/>';
+    s+='<text x="'+(L+6)+'" y="'+(yTop+14)+'" font-size="10.5" fill="#7c3aed">组效应 95% CI ['+F1(group.ciLo)+', '+F1(group.ciHi)+'] ms</text>';
+  }
   const bw=Math.min(46,w/subjects.length*0.55);
   subjects.forEach((sub,i)=>{
     const cx=L+w*(i+0.5)/subjects.length;
@@ -611,7 +618,7 @@ function render(){
   charts.push(chartCard("图2 · 平均正确率","各条件正确率 = 100 − 错误率（含超时），误差线为 95% CI",
     svgBarChart([{label:"一致 Congruent",value:g.accCon,ci:g.ciAccCon,color:"#2563eb"},
                  {label:"不一致 Incongruent",value:g.accInc,ci:g.ciAccInc,color:"#dc2626"}],"正确率 (%)",true),""));
-  charts.push(chartCard("图3 · 每被试 Simon Effect","绿色=正向效应（符合理论预期），橙色=负向；虚线为组均值",
+  charts.push(chartCard("图3 · 每被试 Simon Effect","绿色=正向效应（符合理论预期），橙色=负向；虚线为组均值，紫色阴影带为 Simon effect 的 95% 置信区间（跨零即不显著）",
     svgEffectChart(subs,g),""));
   charts.push(chartCard("图4 · RT 分布直方图","组宽 100ms；仅含清洗后正确试次",
     svgHist(subs),'<span><i style="background:#2563eb"></i>一致</span><span><i style="background:#dc2626"></i>不一致</span>'));
