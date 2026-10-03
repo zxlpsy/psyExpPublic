@@ -121,7 +121,24 @@ cat("==========================================\n")
 
 
 datafilename = paste("exp_datafiles_", expname, ".txt", sep = "")
+
+## !!! 关键修复 !!!
+## PsyToolkit 经 survey 链接收集数据时, 下载的 zip 中【不包含】exp_datafiles_*.txt
+## 清单文件 (只有直接运行 experiment-library 脚本时才会生成)。
+## 若直接 read.table 会报 "No such file", 且控制台粘贴不中断,
+## 后续会连锁导致 "object 'conditionnames' not found"。
+## 因此这里每次运行都用 experiment_data 的实际文件自动重建清单 (新增被试自动同步):
+data_files_all = list.files("experiment_data", pattern = "\\.data\\..*\\.txt$")
+write.table(paste("experiment_data", data_files_all, sep = "/"),
+            file = datafilename, row.names = FALSE, col.names = FALSE, quote = FALSE)
+
 d = read.table(datafilename, as.is = T)
+
+## 防御性检查: 若 experiment_data 为空, 提前给出清晰报错 (而非 conditionnames 模糊报错)
+if (nrow(d) == 0) {
+    stop("experiment_data 文件夹中没有实验数据文件 (*.data.*.txt)。
+         请先从 PsyToolkit 下载数据并解压到本文件夹。")
+}
 
 outputMean = NULL
 outputMedian = NULL
@@ -393,6 +410,13 @@ for (i in 1:length(d[, 1])) {
 }
 
 print(outputMean)
+
+## 防御性检查: 若上方循环未成功处理任何文件 (例如数据文件被移动/损坏),
+## conditionnames 将不存在, 直接给出清晰报错
+if (!exists("conditionnames")) {
+    stop("未成功处理任何被试数据文件, 无法生成条件名 (conditionnames)。
+         请检查 experiment_data 中的数据文件是否完整、可读取。")
+}
 
 colnames(outputMean) = conditionnames
 colnames(outputMedian) = conditionnames
