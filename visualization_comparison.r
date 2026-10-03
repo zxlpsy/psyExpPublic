@@ -3,7 +3,9 @@
 ##   1) base R（R 自带）   2) lattice（R 自带）   3) ggplot2（tidyverse）
 ## 数据清洗规则与 analyze_myTouchSimonNew.r 完全一致:
 ##   正确试次 + RT 200-1500ms + 被试内条件内 ±3SD 修剪
-## 运行后生成三张 PNG，输出到本文件夹
+## 运行方式:
+##   - 在 RStudio 中按 Source: 图直接显示在右下角 Plots 面板 (可用 Export 按钮导出)
+##   - 用 Rscript 运行时: 保存为 PNG 到本文件夹
 ## =====================================================================
 if (!dir.exists("experiment_data"))
     setwd("/Users/zhangxiaolan/Downloads/2周二午 5060 cognitive psy/PsyToolkitData_mySimon_2026_10_02_15_08")
@@ -39,7 +41,8 @@ cat("数据就绪: 组均值 =", round(g$RT, 2), " Simon effect =", round(simon,
 ## =====================================================================
 ## 1) base R —— 传统绘图: 简单直接, 逐个命令手工拼装
 ## =====================================================================
-png("viz_1_base_R.png", width = 1400, height = 800, res = 130)
+toScreen <- interactive()   ## RStudio 中 Source 时为 TRUE
+if (!toScreen) png("viz_1_base_R.png", width = 1400, height = 800, res = 130)
 op <- par(mfrow = c(1, 2))
 mp <- barplot(g$RT, names.arg = g$cond,
               col = c(adjustcolor("#2563eb", 0.85), adjustcolor("#dc2626", 0.85)),
@@ -51,14 +54,14 @@ boxplot(RT ~ cond, trimmed,
         col = c(adjustcolor("#2563eb", 0.4), adjustcolor("#dc2626", 0.4)),
         main = "RT distribution (base R)", ylab = "RT (ms)")
 par(op)
-dev.off()
+if (!toScreen) dev.off()
 
 ## =====================================================================
 ## 2) lattice —— Trellis 分面思想: 一个公式描述整张图
 ## =====================================================================
 library(lattice)
-png("viz_2_lattice.png", width = 1400, height = 800, res = 130)
-barchart(RT ~ cond, data = g, horizontal = FALSE, origin = 0,
+if (!toScreen) png("viz_2_lattice.png", width = 1400, height = 800, res = 130)
+print(barchart(RT ~ cond, data = g, horizontal = FALSE, origin = 0,
          col = c("#2563eb", "#dc2626"), ylim = c(0, max(g$RT + g$ci) * 1.25),
          main = "Mean RT by condition (lattice)", ylab = "RT (ms)",
          panel = function(x, y, ...) {
@@ -66,11 +69,11 @@ barchart(RT ~ cond, data = g, horizontal = FALSE, origin = 0,
              panel.arrows(x, y - g$ci, x, y + g$ci, angle = 90, code = 3,
                           length = 0.06, lwd = 2)
              panel.text(x, y + g$ci + 40, round(y, 1))
-         })
-bwplot(RT ~ cond, trimmed,
+         }))
+print(bwplot(RT ~ cond, trimmed,
        fill = c(adjustcolor("#2563eb", 0.4), adjustcolor("#dc2626", 0.4)),
-       main = "RT distribution (lattice)", ylab = "RT (ms)", xlab = "")
-dev.off()
+       main = "RT distribution (lattice)", ylab = "RT (ms)", xlab = ""))
+if (!toScreen) dev.off()
 
 ## =====================================================================
 ## 3) ggplot2 —— 图形语法: 图层叠加, 默认即精美, 一致的设计语言
@@ -116,11 +119,23 @@ p3 <- ggplot(wide, aes(x = reorder(subject, effect), y = effect,
     theme(plot.title = element_text(face = "bold"),
           axis.text.x = element_text(angle = 45, hjust = 1))
 
-png("viz_3_ggplot2.png", width = 1400, height = 1800, res = 130)
-pushViewport(viewport(layout = grid.layout(3, 1)))
-print(p1, vp = viewport(layout.pos.row = 1))
-print(p2, vp = viewport(layout.pos.row = 2))
-print(p3, vp = viewport(layout.pos.row = 3))
-dev.off()
+if (toScreen) {
+    ## RStudio Plots 面板模式: 三张图依次显示, 可用面板左上角箭头翻页浏览
+    print(p1)
+    print(p2)
+    print(p3)
+} else {
+    png("viz_3_ggplot2.png", width = 1400, height = 1800, res = 130)
+    pushViewport(viewport(layout = grid.layout(3, 1)))
+    print(p1, vp = viewport(layout.pos.row = 1))
+    print(p2, vp = viewport(layout.pos.row = 2))
+    print(p3, vp = viewport(layout.pos.row = 3))
+    dev.off()
+}
 
-cat("已生成: viz_1_base_R.png, viz_2_lattice.png, viz_3_ggplot2.png\n")
+if (toScreen) {
+    cat("已在 RStudio Plots 面板显示 6 页图 (base R 1页双面板 / lattice 2页 / ggplot2 3页),\n")
+    cat("用面板左上角 <- -> 箭头翻页, Export 按钮导出. 终端运行则保存 PNG.\n")
+} else {
+    cat("已生成: viz_1_base_R.png, viz_2_lattice.png, viz_3_ggplot2.png\n")
+}
