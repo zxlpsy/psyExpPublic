@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simon 实验数据一键分析</title>
+<style>
+:root{
+  --bg:#f4f6fb; --card:#ffffff; --ink:#1f2937; --muted:#6b7280;
+  --con:#2563eb; --inc:#dc2626; --accent:#7c3aed; --pos:#059669; --neg:#ea580c;
+  --line:#e5e7eb; --radius:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+header{background:linear-gradient(120deg,#1e3a8a,#2563eb 55%,#7c3aed);color:#fff;padding:28px 32px}
+header h1{margin:0;font-size:24px;letter-spacing:.5px}
+header p{margin:6px 0 0;opacity:.85;font-size:13.5px}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 20px 60px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(16,24,40,.08);padding:20px 22px;margin-bottom:18px}
+h2{font-size:17px;margin:0 0 12px}
+h2 .sub{font-size:12.5px;color:var(--muted);font-weight:400;margin-left:8px}
+/* 控制区 */
+#dropzone{border:2px dashed #c7d2fe;background:#f8faff;border-radius:var(--radius);padding:30px 20px;text-align:center;cursor:pointer;transition:.15s}
+#dropzone.drag{border-color:var(--accent);background:#f3f0ff}
+#dropzone .big{font-size:16.5px;font-weight:600}
+#dropzone .tip{font-size:12.5px;color:var(--muted);margin-top:6px}
+.settings{display:flex;flex-wrap:wrap;gap:14px 26px;margin-top:16px;align-items:end}
+.settings label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.settings input[type=number]{width:88px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+.settings .chk{flex-direction:row;align-items:center;gap:6px;font-size:14px;color:var(--ink)}
+button.primary{background:var(--con);color:#fff;border:none;border-radius:10px;padding:9px 22px;font-size:14.5px;cursor:pointer;font-weight:600}
+button.primary:hover{background:#1d4ed8}
+button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 16px;font-size:13.5px;cursor:pointer}
+button.ghost:hover{border-color:var(--con);color:var(--con)}
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(16,24,40,.08);padding:16px 18px}
+.kpi .t{font-size:12.5px;color:var(--muted)}
+.kpi .v{font-size:24px;font-weight:700;margin-top:2px}
+.kpi .v small{font-size:13px;font-weight:500;color:var(--muted)}
+.kpi.hl .v{color:var(--accent)}
+/* 图表 */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:18px}
+.chart-card{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(16,24,40,.08);padding:18px}
+.chart-card h3{margin:0 0 4px;font-size:15px}
+.chart-card .note{font-size:12px;color:var(--muted);margin-bottom:6px}
+.chart-card svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:16px;font-size:12.5px;color:var(--muted);margin-top:6px;flex-wrap:wrap}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+/* 表格 */
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{background:#f9fafb;color:var(--muted);font-weight:600}
+td:first-child,th:first-child,td.l,th.l{text-align:left}
+tr.excluded td{opacity:.45}
+.tag{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px}
+.tag.ok{background:#ecfdf5;color:#047857}
+.tag.no{background:#fef2f2;color:#b91c1c}
+select{padding:6px 10px;border:1px solid var(--line);border-radius:8px;font-size:13.5px}
+details{margin-top:14px}
+details summary{cursor:pointer;font-weight:600;font-size:14.5px}
+details .body{font-size:13.5px;color:#374151;margin-top:10px;padding-left:6px}
+details ol{padding-left:20px}
+footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--muted);font-size:12.5px}
+@media print{header{background:#1e3a8a} .settings,#dropzone,footer{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Simon 实验数据一键分析与可视化</h1>
+  <p>适用于 PsyToolkit touch Simon（myTouchSimonNew）· 清洗规则与 analyze_myTouchSimonNew.r 完全一致 · 全部计算在本地浏览器完成，数据不会上传</p>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h2>1 · 导入数据</h2>
+    <div id="dropzone">
+      <div class="big">点击选择 <b>experiment_data</b> 文件夹，或将整个文件夹拖到此处</div>
+      <div class="tip">支持 Chrome / Edge / Safari / Firefox；数据文件（*.data.*.txt）会被自动识别，其余文件自动忽略。后续收集新数据后，重新选择文件夹即可一键重算。</div>
+      <div class="tip" id="status" style="margin-top:8px"></div>
+    </div>
+    <input type="file" id="fileInput" webkitdirectory multiple hidden>
+    <div class="settings">
+      <label>RT 下限 (ms)<input type="number" id="lowRT" value="200" min="0" step="50"></label>
+      <label>RT 上限 (ms)<input type="number" id="highRT" value="1500" min="100" step="50"></label>
+      <label>SD 修剪 (±×SD)<input type="number" id="trimSD" value="3" min="0" step="0.5"></label>
+      <label class="chk"><input type="checkbox" id="exErrChk"> 排除总错误率 &gt; <input type="number" id="exErrVal" value="25" min="1" max="100" style="width:60px"> % 的被试</label>
+      <button class="primary" id="rerunBtn">重新分析</button>
+    </div>
+  </div>
+
+  <div id="results" hidden>
+    <div class="kpis" id="kpis"></div>
+    <div class="grid" id="charts"></div>
+
+    <div class="card">
+      <h2>各被试明细 <span class="sub" id="tableNote"></span></h2>
+      <div style="overflow:auto"><table id="subjTable"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>导出结果</h2>
+      <button class="ghost" id="dlSummary">下载 被试汇总 CSV</button>
+      <button class="ghost" id="dlTrials">下载 清洗后逐试次 CSV</button>
+      <button class="ghost" onclick="window.print()">打印 / 另存为 PDF（可直接放报告附录）</button>
+    </div>
+
+    <div class="card">
+      <details>
+        <summary>方法说明：数据清洗与分析流程（可写入 report）</summary>
+        <div class="body">
+          <ol>
+            <li><b>数据格式</b>：每试次一行共 9 列：block、一致性(文字)、颜色、一致性编码(1/2)、表格行、<b>状态码</b>(1=正确，2=按错，3=超时)、<b>RT(ms)</b>、触摸X/Y坐标。仅分析 block = test 的正式试次。</li>
+            <li><b>剔除错误与超时试次</b>：RT 只统计状态码=1 的正确试次；按错与超时（RT=5000ms）试次剔除，单独汇总为正确率指标。</li>
+            <li><b>剔除极端 RT</b>：剔除 &lt;200ms 的预期反应与 &gt;1500ms 的过长反应（热身走神试次）。</li>
+            <li><b>被试内、条件内 ±3SD 修剪</b>：对每名被试每个条件，剔除偏离该条件均值 3 个标准差之外的试次。</li>
+            <li><b>统计</b>：一致/不一致 RT = 清洗后条件均值；Simon effect = 不一致 RT − 一致 RT；组水平取各被试均值，并以配对样本 t 检验考察显著性；误差线为被试间 95% 置信区间。</li>
+            <li><b>分布分析</b>：按 Simon 任务文献惯例补充 RT 分布直方图、箱线图与 delta plot（效应量随 RT 五分位 Vincentile 的变化），用于刻画效应随反应速度的动态变化。</li>
+          </ol>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+<footer>提示：柱状图误差线为 95% CI（被试间）；各图数值均基于上述清洗规则，参数可在上方修改后点击“重新分析”。</footer>
+
+<script>
+/* CORE START */
+const DEFAULT_OPTS={lowRT:200,highRT:1500,trimSD:3,excludeErrEnabled:false,excludeErrThreshold:25};
+function mean(a){return a.reduce((s,v)=>s+v,0)/a.length;}
+function sd(a){if(a.length<2)return NaN;const m=mean(a);return Math.sqrt(a.reduce((s,v)=>s+(v-m)*(v-m),0)/(a.length-1));}
+
+function lgamma(x){
+  if(x<0.5)return Math.log(Math.PI/Math.sin(Math.PI*x))-lgamma(1-x);
+  x-=1;
+  const C=[0.99999999999980993,676.5203681195951,-1259.1392167222889,771.32342877765398,
+    -176.61502910680686,12.507343278309858,-0.13857109526562878,
+    9.984369578019576e-6,1.5056327351493116e-7];
+  const G=7,t=x+G+0.5;let a=C[0];
+  for(let i=1;i<G+2;i++)a+=C[i]/(x+i);
+  return 0.5*Math.log(2*Math.PI)+(x+0.5)*Math.log(t)-t+Math.log(a);
+}
+function betacf(a,b,x){
+  const MAXIT=300,EPS=3e-14,FPMIN=1e-300;
+  const qab=a+b,qap=a+1,qam=a-1;
+  let c=1,d=1-qab*x/qap;
+  if(Math.abs(d)<FPMIN)d=FPMIN;
+  d=1/d;let h=d;
+  for(let m=1;m<=MAXIT;m++){
+    const m2=2*m;
+    let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+    d=1+aa*d;if(Math.abs(d)<FPMIN)d=FPMIN;
+    c=1+aa/c;if(Math.abs(c)<FPMIN)c=FPMIN;
+    d=1/d;h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+    d=1+aa*d;if(Math.abs(d)<FPMIN)d=FPMIN;
+    c=1+aa/c;if(Math.abs(c)<FPMIN)c=FPMIN;
+    d=1/d;const del=d*c;h*=del;
+    if(Math.abs(del-1)<EPS)break;
+  }
+  return h;
+}
+function betai(a,b,x){
+  if(x<=0)return 0;if(x>=1)return 1;
+  const bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x));
+  if(x<(a+1)/(a+b+2))return bt*betacf(a,b,x)/a;
+  return 1-bt*betacf(b,a,1-x)/b;
+}
+function tTestPaired(inc,con){
+  const d=[];for(let i=0;i<Math.min(inc.length,con.length);i++)d.push(inc[i]-con[i]);
+  const n=d.length;
+  if(n<2)return{t:NaN,df:n-1,p:NaN,meanDiff:NaN,dz:NaN};
+  const m=mean(d),s=sd(d);
+  if(!isFinite(s)||s===0)return{t:NaN,df:n-1,p:NaN,meanDiff:m,dz:NaN};
+  const t=m/(s/Math.sqrt(n)),df=n-1;
+  return{t,df,p:betai(df/2,0.5,df/(df+t*t)),meanDiff:m,dz:m/s};
+}
+function tCrit(df,alpha){
+  let lo=0,hi=60;
+  for(let i=0;i<200;i++){const mid=(lo+hi)/2;
+    const p=betai(df/2,0.5,df/(df+mid*mid));
+    if(p>alpha)lo=mid;else hi=mid;}
+  return (lo+hi)/2;
+}
+
+function parseDataFile(name,text){
+  const rows=[];
+  for(const line of text.split(/\r?\n/)){
+    const f=line.trim().split(/\s+/);
+    if(f.length<7||!f[0]||!isNaN(parseFloat(f[0])))continue;
+    const cong=parseInt(f[3]),status=parseInt(f[5]),rt=parseFloat(f[6]);
+    if(!isFinite(cong)||!isFinite(status)||!isFinite(rt))continue;
+    rows.push({block:f[0],condWord:f[1],color:f[2],congruency:cong,status:status,rt:rt});
+  }
+  return{name,rows};
+}
+function looksLikeSimonData(p){
+  const t=p.rows.filter(r=>r.block==="test");
+  if(t.length<5)return false;
+  const ok=t.filter(r=>r.congruency===1||r.congruency===2).length;
+  return ok>=t.length*0.9;
+}
+
+function analyzeSubject(parsed,opts){
+  const test=parsed.rows.filter(r=>r.block==="test");
+  if(!test.length)return null;
+  const kept={1:[],2:[]},errCount={1:0,2:0},totCount={1:0,2:0};
+  const trials=[];
+  test.forEach((r,idx)=>{
+    const c=r.congruency===1?1:2;
+    totCount[c]++;
+    let included=true,reason=null;
+    if(r.status!==1){included=false;reason=(r.status===3?"超时(RT=5000ms)":"错误反应");}
+    else if(r.rt<opts.lowRT||r.rt>opts.highRT){included=false;reason="RT超出["+opts.lowRT+","+opts.highRT+"]ms";}
+    if(r.status!==1)errCount[c]++;
+    trials.push({trial:idx+1,cond:c,rt:r.rt,status:r.status,included,reason});
+    if(included)kept[c].push(r.rt);
+  });
+  const conds={};
+  [1,2].forEach(c=>{
+    const arr=kept[c];let rts=arr,lo=-Infinity,hi=Infinity;
+    if(opts.trimSD>0&&arr.length>=2){
+      const m=mean(arr),s=sd(arr);
+      if(isFinite(s)&&s>0){lo=m-opts.trimSD*s;hi=m+opts.trimSD*s;
+        rts=arr.filter(v=>v>lo&&v<hi);}
+    }
+    conds[c]={rts,n:rts.length,mean:mean(rts)};
+    trials.forEach(t=>{if(t.cond===c&&t.included&&(t.rt<=lo||t.rt>=hi)){t.included=false;t.reason="被±"+opts.trimSD+"SD修剪";}});
+  });
+  const res={name:parsed.name,nTrials:test.length,trials:trials,
+    con:conds[1],inc:conds[2],
+    meanCon:conds[1].mean,meanInc:conds[2].mean,
+    simon:conds[2].mean-conds[1].mean,
+    nUsed:conds[1].n+conds[2].n,
+    errRate:(errCount[1]+errCount[2])/test.length*100,
+    errRateCon:totCount[1]?errCount[1]/totCount[1]*100:NaN,
+    errRateInc:totCount[2]?errCount[2]/totCount[2]*100:NaN,
+    excludedByErr:false};
+  return res;
+}
+
+function binMeans(sorted,bins){
+  const n=sorted.length,out=[];
+  if(!n)return Array(bins).fill(NaN);
+  for(let b=0;b<bins;b++){
+    let i0=Math.floor(b*n/bins),i1=Math.floor((b+1)*n/bins);
+    if(i1<=i0)i1=Math.min(i0+1,n);
+    out.push(mean(sorted.slice(i0,i1)));
+  }
+  return out;
+}
+function analyzeGroup(subjects){
+  const inc=subjects.filter(s=>!s.excludedByErr);
+  const n=inc.length;
+  if(!n)return null;
+  const conArr=inc.map(s=>s.meanCon),incArr=inc.map(s=>s.meanInc);
+  const gmCon=mean(conArr),gmInc=mean(incArr);
+  const tc=n>1?tCrit(n-1,0.05):NaN;
+  const g={n,nTotal:subjects.length,included:inc,
+    meanCon:gmCon,meanInc:gmInc,simon:gmInc-gmCon,
+    ciCon:n>1?tc*sd(conArr)/Math.sqrt(n):NaN,
+    ciInc:n>1?tc*sd(incArr)/Math.sqrt(n):NaN,
+    accCon:100-mean(inc.map(s=>s.errRateCon)),
+    accInc:100-mean(inc.map(s=>s.errRateInc)),
+    ciAccCon:n>1?tc*sd(inc.map(s=>s.errRateCon))/Math.sqrt(n):NaN,
+    ciAccInc:n>1?tc*sd(inc.map(s=>s.errRateInc))/Math.sqrt(n):NaN,
+    errRate:mean(inc.map(s=>s.errRate))};
+  const tt=tTestPaired(incArr,conArr);
+  g.t=tt.t;g.df=tt.df;g.p=tt.p;g.dz=tt.dz;
+  const bins=5,dc=[],di=[];
+  inc.forEach(s=>{
+    dc.push(binMeans(s.con.rts.slice().sort((a,b)=>a-b),bins));
+    di.push(binMeans(s.inc.rts.slice().sort((a,b)=>a-b),bins));
+  });
+  g.delta={x:[],y:[]};
+  for(let b=0;b<bins;b++){
+    const ac=mean(dc.map(a=>a[b]).filter(isFinite));
+    const ai=mean(di.map(a=>a[b]).filter(isFinite));
+    if(!isFinite(ac)||!isFinite(ai))continue;
+    g.delta.x.push((ac+ai)/2);g.delta.y.push(ai-ac);
+  }
+  return g;
+}
+/* CORE END */
+
+/* ============ 以下为浏览器界面代码 ============ */
+const state={files:[],subjects:[],group:null,opts:null,seqIdx:0};
+const $=id=>document.getElementById(id);
+
+function readText(f){return f.text?f.text():new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsText(f);});}
+
+async function collectFiles(entry,out){
+  if(entry.isFile){const f=await new Promise((res,rej)=>entry.file(res,rej));out.push(f);}
+  else if(entry.isDirectory){
+    const reader=entry.createReader();let batch;
+    do{batch=await new Promise((res,rej)=>reader.readEntries(res,rej));
+      for(const e of batch)await collectFiles(e,out);
+    }while(batch.length);
+  }
+}
+async function handleDrop(dt){
+  const files=[];
+  if(dt.items&&dt.items.length&&dt.items[0].webkitGetAsEntry){
+    const entries=[];
+    for(const it of dt.items){const e=it.webkitGetAsEntry();if(e)entries.push(e);}
+    for(const e of entries)await collectFiles(e,files);
+  }else{for(const f of dt.files)files.push(f);}
+  loadFiles(files);
+}
+function loadFiles(fileList){
+  const files=[...fileList].filter(f=>/\.txt$/i.test(f.name)||/\.data\./i.test(f.name));
+  if(!files.length){$("status").textContent="未找到 .txt 数据文件，请确认选择的是 experiment_data 文件夹。";return;}
+  $("status").textContent="正在读取 "+files.length+" 个文件…";
+  Promise.all(files.map(f=>readText(f).then(t=>parseDataFile(f.name,t))))
+    .then(parsed=>{
+      const data=parsed.filter(looksLikeSimonData);
+      if(!data.length){$("status").textContent="已读取文件，但未识别出有效的 Simon 数据文件（需要包含 block=test 的 9 列数据行）。";return;}
+      data.sort((a,b)=>a.name<b.name?-1:1);
+      state.files=data;
+      $("status").textContent="已识别 "+data.length+" 个被试数据文件：" + data.map(d=>d.name.replace(/^.*myTouchSimonNew\./,"").replace(/\.data\..*$/,"")).join("、");
+      runAnalysis();
+    });
+}
+
+function getOpts(){
+  return{lowRT:+$("lowRT").value||200,highRT:+$("highRT").value||1500,
+    trimSD:+$("trimSD").value||0,
+    excludeErrEnabled:$("exErrChk").checked,excludeErrThreshold:+$("exErrVal").value||25};
+}
+function runAnalysis(){
+  if(!state.files.length)return;
+  const opts=getOpts();state.opts=opts;
+  const subjects=state.files.map(f=>analyzeSubject(f,opts)).filter(Boolean);
+  subjects.forEach(s=>{s.excludedByErr=opts.excludeErrEnabled&&s.errRate>opts.excludeErrThreshold;});
+  state.subjects=subjects;
+  state.group=analyzeGroup(subjects);
+  state.seqIdx=0;
+  render();
+}
+
+/* ---- SVG 工具 ---- */
+function niceTicks(lo,hi,n){
+  n=n||5;const span=(hi-lo)||1;
+  const step0=span/n,mag=Math.pow(10,Math.floor(Math.log10(step0)));
+  let step=mag;
+  for(const m of[1,2,2.5,5,10]){if(step0<=m*mag){step=m*mag;break;}}
+  const t=[];const start=Math.ceil(lo/step)*step;
+  for(let v=start;v<=hi+1e-9;v+=step)t.push(+v.toFixed(6));
+  return t;
+}
+const F1=v=>(Math.round(v*10)/10).toString();
+const F0=v=>(Math.round(v)).toString();
+
+function svgBarChart(items,yLabel,yFrom0){
+  const W=460,H=310,L=64,R=20,T=26,B=44;
+  const w=W-L-R,h=H-T-B;
+  let ymax=0;
+  items.forEach(it=>{ymax=Math.max(ymax,it.value+(it.ci||0));});
+  let ymin=yFrom0?0:Infinity;
+  if(!yFrom0){items.forEach(it=>{ymin=Math.min(ymin,it.value-(it.ci||0));});ymin=Math.max(0,ymin-20);}
+  ymax=ymax*1.18+(yFrom0?0:0);
+  const yv=v=>T+h-(v-ymin)/(ymax-ymin)*h;
+  const ticks=niceTicks(ymin,ymax,5);
+  let s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+  s+='<text x="'+(W/2)+'" y="14" text-anchor="middle" font-size="12" fill="#6b7280">'+yLabel+'</text>';
+  ticks.forEach(v=>{
+    s+='<line x1="'+L+'" y1="'+yv(v)+'" x2="'+(L+w)+'" y2="'+yv(v)+'" stroke="#e5e7eb" stroke-width="1"/>';
+    s+='<text x="'+(L-8)+'" y="'+(yv(v)+4)+'" text-anchor="end" font-size="11" fill="#6b7280">'+(v>=100?F0(v):F1(v))+'</text>';
+  });
+  const bw=Math.min(110,w/items.length*0.5);
+  items.forEach((it,i)=>{
+    const cx=L+w*(i+0.5)/items.length;
+    const y0=yv(ymin),y1=yv(it.value);
+    s+='<rect x="'+(cx-bw/2)+'" y="'+y1+'" width="'+bw+'" height="'+(y0-y1)+'" rx="6" fill="'+it.color+'" opacity="0.88"/>';
+    if(it.ci&&isFinite(it.ci)){
+      const yt=yv(it.value-it.ci),yb=yv(it.value+it.ci);
+      s+='<line x1="'+cx+'" y1="'+yt+'" x2="'+cx+'" y2="'+yb+'" stroke="#374151" stroke-width="1.6"/>';
+      [[yt,-1],[yb,1]].forEach(p=>{s+='<line x1="'+(cx-7)+'" y1="'+p[0]+'" x2="'+(cx+7)+'" y2="'+p[0]+'" stroke="#374151" stroke-width="1.6"/>';});
+    }
+    s+='<text x="'+cx+'" y="'+(y1-10)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#111827">'+F1(it.value)+'</text>';
+    s+='<text x="'+cx+'" y="'+(T+h+18)+'" text-anchor="middle" font-size="12.5" fill="#374151">'+it.label+'</text>';
+  });
+  s+='<line x1="'+L+'" y1="'+(T+h)+'" x2="'+(L+w)+'" y2="'+(T+h)+'" stroke="#9ca3af"/></svg>';
+  return s;
+}
+
+function svgEffectChart(subjects,group){
+  const W=460,H=310,L=64,R=20,T=26,B=40;
+  const w=W-L-R,h=H-T-B;
+  const vals=subjects.map(s=>s.simon);
+  let ymax=Math.max(...vals,group.simon,10),ymin=Math.min(...vals,group.simon,-10);
+  const pad=(ymax-ymin)*0.2||10;ymax+=pad;ymin-=pad;
+  const yv=v=>T+h-(v-ymin)/(ymax-ymin)*h;
+  const ticks=niceTicks(ymin,ymax,5);
+  let s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+  s+='<text x="'+(W/2)+'" y="14" text-anchor="middle" font-size="12" fill="#6b7280">每被试 Simon Effect（不一致 − 一致，ms）</text>';
+  ticks.forEach(v=>{s+='<line x1="'+L+'" y1="'+yv(v)+'" x2="'+(L+w)+'" y2="'+yv(v)+'" stroke="#e5e7eb"/>';
+    s+='<text x="'+(L-8)+'" y="'+(yv(v)+4)+'" text-anchor="end" font-size="11" fill="#6b7280">'+F0(v)+'</text>';});
+  s+='<line x1="'+L+'" y1="'+yv(0)+'" x2="'+(L+w)+'" y2="'+yv(0)+'" stroke="#374151" stroke-width="1.2"/>';
+  const bw=Math.min(46,w/subjects.length*0.55);
+  subjects.forEach((sub,i)=>{
+    const cx=L+w*(i+0.5)/subjects.length;
+    const v=sub.simon,y1=yv(v),y0=yv(0);
+    const top=Math.min(y0,y1),hh=Math.abs(y0-y1)||1;
+    const col=sub.excludedByErr?"#d1d5db":(v>=0?"#059669":"#ea580c");
+    s+='<rect x="'+(cx-bw/2)+'" y="'+top+'" width="'+bw+'" height="'+hh+'" rx="4" fill="'+col+'" opacity="0.9"/>';
+    s+='<text x="'+cx+'" y="'+(v>=0?top-8:top+hh+16)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#111827">'+F1(v)+'</text>';
+    s+='<text x="'+cx+'" y="'+(T+h+16)+'" text-anchor="middle" font-size="11.5" fill="#374151">S'+(i+1)+'</text>';
+  });
+  s+='<line x1="'+L+'" y1="'+yv(group.simon)+'" x2="'+(L+w)+'" y2="'+yv(group.simon)+'" stroke="#7c3aed" stroke-width="1.6" stroke-dasharray="7 5"/>';
+  s+='<text x="'+(L+w)+'" y="'+(yv(group.simon)-6)+'" text-anchor="end" font-size="11.5" fill="#7c3aed">组均值 '+F1(group.simon)+' ms</text>';
+  s+='</svg>';
+  return s;
+}
+
+function svgHist(subjects){
+  const opts=state.opts;
+  const con=[],inc=[];
+  subjects.forEach(s=>{if(!s.excludedByErr){s.con.rts.forEach(v=>con.push(v));s.inc.rts.forEach(v=>inc.push(v));}});
+  const binW=100,lo=Math.floor(opts.lowRT/binW)*binW,hi=Math.ceil(opts.highRT/binW)*binW;
+  const nb=Math.round((hi-lo)/binW);
+  const bc=new Array(nb).fill(0),bi=new Array(nb).fill(0);
+  con.forEach(v=>{const b=Math.floor((v-lo)/binW);if(b>=0&&b<nb)bc[b]++;});
+  inc.forEach(v=>{const b=Math.floor((v-lo)/binW);if(b>=0&&b<nb)bi[b]++;});
+  const W=460,H=310,L=52,R=14,T=26,B=40;
+  const w=W-L-R,h=H-T-B,ymax=Math.max(1,...bc,...bi)*1.15;
+  const yv=v=>T+h-v/ymax*h;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+  s+='<text x="'+(W/2)+'" y="14" text-anchor="middle" font-size="12" fill="#6b7280">清洗后 RT 分布（全被试试次合并）</text>';
+  niceTicks(0,ymax,5).forEach(v=>{s+='<line x1="'+L+'" y1="'+yv(v)+'" x2="'+(L+w)+'" y2="'+yv(v)+'" stroke="#e5e7eb"/>';
+    s+='<text x="'+(L-6)+'" y="'+(yv(v)+4)+'" text-anchor="end" font-size="11" fill="#6b7280">'+F0(v)+'</text>';});
+  for(let b=0;b<nb;b++){
+    const x=L+b*w/nb;
+    const bw=w/nb*0.44;
+    s+='<rect x="'+(x-bw-1)+'" y="'+yv(bc[b])+'" width="'+bw+'" height="'+(yv(0)-yv(bc[b]))+'" fill="#2563eb" opacity="0.85"/>';
+    s+='<rect x="'+(x+1)+'" y="'+yv(bi[b])+'" width="'+bw+'" height="'+(yv(0)-yv(bi[b]))+'" fill="#dc2626" opacity="0.85"/>';
+  }
+  s+='<line x1="'+L+'" y1="'+yv(0)+'" x2="'+(L+w)+'" y2="'+yv(0)+'" stroke="#9ca3af"/>';
+  for(let b=0;b<=nb;b+=2){const x=L+b*w/nb;
+    s+='<text x="'+x+'" y="'+(T+h+16)+'" text-anchor="middle" font-size="11" fill="#6b7280">'+(lo+b*binW)+'</text>';}
+  s+='<text x="'+(L+w/2)+'" y="'+(T+h+32)+'" text-anchor="middle" font-size="11" fill="#6b7280">RT (ms)</text>';
+  s+='</svg>';
+  return s;
+}
+
+function boxStats(arr){
+  const a=arr.slice().sort((x,y)=>x-y),n=a.length;
+  const q=function(p){const h=(n-1)*p,lo=Math.floor(h),hi=Math.ceil(h);return a[lo]+(h-lo)*(a[hi]-a[lo]);};
+  const q1=q(.25),med=q(.5),q3=q(.75),iqr=q3-q1;
+  let wlo=q1-1.5*iqr,whi=q3+1.5*iqr;
+  const inside=a.filter(v=>v>=wlo&&v<=whi);
+  const out=a.filter(v=>v<wlo||v>whi);
+  return{q1,med,q3,iqr,min:inside[0],max:inside[inside.length-1],out,n};
+}
+function svgBox(subjects){
+  const con=[],inc=[];
+  subjects.forEach(s=>{if(!s.excludedByErr){s.con.rts.forEach(v=>con.push(v));s.inc.rts.forEach(v=>inc.push(v));}});
+  const b1=boxStats(con),b2=boxStats(inc);
+  const W=460,H=310,L=64,R=20,T=26,B=40;
+  const w=W-L-R,h=H-T-B;
+  let ymin=Math.min(b1.q1,b2.q1,b1.min,b2.min),ymax=Math.max(b1.q3,b2.q3,b1.max,b2.max,...b1.out,...b2.out);
+  const pad=(ymax-ymin)*0.15;ymin-=pad;ymax+=pad;
+  const yv=v=>T+h-(v-ymin)/(ymax-ymin)*h;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+  s+='<text x="'+(W/2)+'" y="14" text-anchor="middle" font-size="12" fill="#6b7280">清洗后 RT 箱线图（全被试合并）</text>';
+  niceTicks(ymin,ymax,5).forEach(v=>{s+='<line x1="'+L+'" y1="'+yv(v)+'" x2="'+(L+w)+'" y2="'+yv(v)+'" stroke="#e5e7eb"/>';
+    s+='<text x="'+(L-8)+'" y="'+(yv(v)+4)+'" text-anchor="end" font-size="11" fill="#6b7280">'+F0(v)+'</text>';});
+  [[b1,"一致 Congruent","#2563eb",L+w*0.27],[b2,"不一致 Incongruent","#dc2626",L+w*0.73]].forEach(b=>{
+    const st=b[0],cx=b[3],bw=86;
+    s+='<line x1="'+cx+'" y1="'+yv(st.min)+'" x2="'+cx+'" y2="'+yv(st.q1)+'" stroke="#6b7280"/>';
+    s+='<line x1="'+cx+'" y1="'+yv(st.q3)+'" x2="'+cx+'" y2="'+yv(st.max)+'" stroke="#6b7280"/>';
+    s+='<line x1="'+(cx-12)+'" y1="'+yv(st.min)+'" x2="'+(cx+12)+'" y2="'+yv(st.min)+'" stroke="#6b7280"/>';
+    s+='<line x1="'+(cx-12)+'" y1="'+yv(st.max)+'" x2="'+(cx+12)+'" y2="'+yv(st.max)+'" stroke="#6b7280"/>';
+    s+='<rect x="'+(cx-bw/2)+'" y="'+yv(st.q3)+'" width="'+bw+'" height="'+(yv(st.q1)-yv(st.q3))+'" rx="4" fill="'+b[2]+'" opacity="0.18" stroke="'+b[2]+'" stroke-width="1.5"/>';
+    s+='<line x1="'+(cx-bw/2)+'" y1="'+yv(st.med)+'" x2="'+(cx+bw/2)+'" y2="'+yv(st.med)+'" stroke="'+b[2]+'" stroke-width="3"/>';
+    s+='<text x="'+cx+'" y="'+(T+h+18)+'" text-anchor="middle" font-size="12" fill="#374151">'+b[1]+'</text>';
+    st.out.forEach(o=>{s+='<circle cx="'+cx+'" cy="'+yv(o)+'" r="3" fill="none" stroke="#6b7280"/>';});
+  });
+  s+='<line x1="'+L+'" y1="'+(T+h)+'" x2="'+(L+w)+'" y2="'+(T+h)+'" stroke="#9ca3af"/></svg>';
+  return s;
+}
+
+function svgDelta(g){
+  const W=460,H=310,L=64,R=24,T=26,B=42;
+  const w=W-L-R,h=H-T-B;
+  const xs=g.delta.x,ys=g.delta.y;
+  const xmin=Math.min(...xs)-30,xmax=Math.max(...xs)+30;
+  let ymax=Math.max(...ys,10),ymin=Math.min(...ys,-10);
+  const pad=(ymax-ymin)*0.25||10;ymax+=pad;ymin-=pad;
+  const xv=v=>L+(v-xmin)/(xmax-xmin)*w, yv=v=>T+h-(v-ymin)/(ymax-ymin)*h;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+  s+='<text x="'+(W/2)+'" y="14" text-anchor="middle" font-size="12" fill="#6b7280">Delta plot：效应量随 RT 五分位（Vincentile）的变化</text>';
+  niceTicks(ymin,ymax,5).forEach(v=>{s+='<line x1="'+L+'" y1="'+yv(v)+'" x2="'+(L+w)+'" y2="'+yv(v)+'" stroke="#e5e7eb"/>';
+    s+='<text x="'+(L-8)+'" y="'+(yv(v)+4)+'" text-anchor="end" font-size="11" fill="#6b7280">'+F0(v)+'</text>';});
+  niceTicks(xmin,xmax,5).forEach(v=>{s+='<line x1="'+xv(v)+'" y1="'+T+'" x2="'+xv(v)+'" y2="'+(T+h)+'" stroke="#f3f4f6"/>';
+    s+='<text x="'+xv(v)+'" y="'+(T+h+16)+'" text-anchor="middle" font-size="11" fill="#6b7280">'+F0(v)+'</text>';});
+  s+='<line x1="'+L+'" y1="'+yv(0)+'" x2="'+(L+w)+'" y2="'+yv(0)+'" stroke="#374151" stroke-width="1.2"/>';
+  let path="";
+  xs.forEach((x,i)=>{path+=(i?"L":"M")+xv(x).toFixed(1)+" "+yv(ys[i]).toFixed(1)+" ";});
+  s+='<path d="'+path+'" fill="none" stroke="#7c3aed" stroke-width="2.2"/>';
+  xs.forEach((x,i)=>{s+='<circle cx="'+xv(x)+'" cy="'+yv(ys[i])+'" r="4.5" fill="#7c3aed"/>';
+    s+='<text x="'+xv(x)+'" y="'+(yv(ys[i])-11)+'" text-anchor="middle" font-size="11" font-weight="600" fill="#374151">'+F1(ys[i])+'</text>';});
+  s+='<text x="'+(L+w/2)+'" y="'+(T+h+32)+'" text-anchor="middle" font-size="11" fill="#6b7280">五分位平均 RT (ms)</text>';
+  s+='<text x="'+(W/2)+'" y="'+(H-4)+'" text-anchor="middle" font-size="10.5" fill="#9ca3af">若 delta 随 RT 增大而下降，符合 Simon 任务的典型分布模式</text>';
+  s+='</svg>';
+  return s;
+}
+
+function svgSequence(sub,idx){
+  const opts=state.opts;
+  const W=460,H=310,L=64,R=20,T=26,B=42;
+  const w=W-L-R,h=H-T-B;
+  const trials=sub.trials;
+  const rts=trials.map(t=>t.rt);
+  const ymax=Math.min(5200,Math.max(...rts,opts.highRT)*1.08),ymin=0;
+  const yv=v=>T+h-(v-ymin)/(ymax-ymin)*h;
+  const xv=i=>L+((i+0.5)/trials.length)*w;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+  s+='<text x="'+(W/2)+'" y="14" text-anchor="middle" font-size="12" fill="#6b7280">S'+(idx+1)+' 逐试次 RT 序列（灰线为清洗边界）</text>';
+  niceTicks(0,ymax,5).forEach(v=>{s+='<line x1="'+L+'" y1="'+yv(v)+'" x2="'+(L+w)+'" y2="'+yv(v)+'" stroke="#e5e7eb"/>';
+    s+='<text x="'+(L-8)+'" y="'+(yv(v)+4)+'" text-anchor="end" font-size="11" fill="#6b7280">'+F0(v)+'</text>';});
+  [opts.lowRT,opts.highRT].forEach(v=>{s+='<line x1="'+L+'" y1="'+yv(v)+'" x2="'+(L+w)+'" y2="'+yv(v)+'" stroke="#9ca3af" stroke-dasharray="4 4"/>';});
+  trials.forEach((t,i)=>{
+    if(t.included){
+      s+='<circle cx="'+xv(i)+'" cy="'+yv(t.rt)+'" r="4" fill="'+(t.cond===1?"#2563eb":"#dc2626")+'"/>';
+    }else{
+      s+='<text x="'+xv(i)+'" y="'+(yv(t.rt)+4)+'" text-anchor="middle" font-size="12" font-weight="800" fill="#b91c1c"><title>'+t.reason+'</title>✕</text>';
+    }
+  });
+  s+='<text x="'+(L+w/2)+'" y="'+(T+h+18)+'" text-anchor="middle" font-size="11" fill="#6b7280">试次顺序</text>';
+  s+='<text x="'+(L+w/2)+'" y="'+(H-4)+'" text-anchor="middle" font-size="10.5" fill="#9ca3af">红 ✕ = 被剔除试次（悬停查看原因：错误/超时/RT越界/SD修剪）</text>';
+  s+='</svg>';
+  return s;
+}
+
+/* ---- 渲染 ---- */
+function chartCard(title,note,svg,legend){
+  return '<div class="chart-card"><h3>'+title+'</h3><div class="note">'+note+'</div>'+svg+(legend?'<div class="legend">'+legend+'</div>':'')+'</div>';
+}
+function render(){
+  const g=state.group,subs=state.subjects;
+  if(!g){return;}
+  $("results").hidden=false;
+
+  const pTxt=isFinite(g.p)?(g.p<0.001?"< 0.001":g.p.toFixed(3)):"—";
+  const effColor=g.simon>=0?"var(--accent)":"var(--neg)";
+  $("kpis").innerHTML=
+    '<div class="kpi"><div class="t">有效被试</div><div class="v">'+g.n+'<small> / '+g.nTotal+' 名</small></div></div>'
+    +'<div class="kpi"><div class="t">一致条件平均 RT</div><div class="v" style="color:var(--con)">'+F1(g.meanCon)+'<small> ms</small></div></div>'
+    +'<div class="kpi"><div class="t">不一致条件平均 RT</div><div class="v" style="color:var(--inc)">'+F1(g.meanInc)+'<small> ms</small></div></div>'
+    +'<div class="kpi hl"><div class="t">Simon Effect</div><div class="v" style="color:'+effColor+'">'+(g.simon>0?"+":"")+F1(g.simon)+'<small> ms</small></div></div>'
+    +'<div class="kpi"><div class="t">配对 t 检验</div><div class="v">t('+g.df+')='+F2(g.t)+'<small>, p='+pTxt+'</small></div></div>'
+    +'<div class="kpi"><div class="t">平均错误率</div><div class="v">'+F1(g.errRate)+'<small> %</small></div></div>';
+  function F2(v){return isFinite(v)?(Math.round(v*1000)/1000).toString():"—";}
+
+  const charts=[];
+  charts.push(chartCard("图1 · 平均反应时","误差线为 95% 置信区间（被试间）",
+    svgBarChart([{label:"一致 Congruent",value:g.meanCon,ci:g.ciCon,color:"#2563eb"},
+                 {label:"不一致 Incongruent",value:g.meanInc,ci:g.ciInc,color:"#dc2626"}],"平均反应时 (ms)",true),
+    '<span><i style="background:#2563eb"></i>一致</span><span><i style="background:#dc2626"></i>不一致</span><span>Simon Effect = '+F1(g.simon)+' ms</span>'));
+  charts.push(chartCard("图2 · 平均正确率","各条件正确率 = 100 − 错误率（含超时），误差线为 95% CI",
+    svgBarChart([{label:"一致 Congruent",value:g.accCon,ci:g.ciAccCon,color:"#2563eb"},
+                 {label:"不一致 Incongruent",value:g.accInc,ci:g.ciAccInc,color:"#dc2626"}],"正确率 (%)",true),""));
+  charts.push(chartCard("图3 · 每被试 Simon Effect","绿色=正向效应（符合理论预期），橙色=负向；虚线为组均值",
+    svgEffectChart(subs,g),""));
+  charts.push(chartCard("图4 · RT 分布直方图","组宽 100ms；仅含清洗后正确试次",
+    svgHist(subs),'<span><i style="background:#2563eb"></i>一致</span><span><i style="background:#dc2626"></i>不一致</span>'));
+  charts.push(chartCard("图5 · RT 箱线图","箱体=四分位区间，粗线=中位数，空心点=离群试次",
+    svgBox(subs),""));
+  charts.push(chartCard("图6 · Delta plot（分布分析）","Simon 任务经典分布分析：每个点为按全组 RT 五分位（慢→快）计算的效应量",
+    svgDelta(g),""));
+  charts.push(chartCard("图7 · 逐试次 RT 序列（数据质量检查）","用于检查练习效应与被剔除试次；切换被试查看",
+    '<div style="text-align:right;margin-bottom:6px"><select id="seqSel">'+
+    subs.map((s,i)=>'<option value="'+i+'"'+(i===state.seqIdx?" selected":"")+'">S'+(i+1)+'</option>').join("")+'</select></div>'+
+    svgSequence(subs[state.seqIdx],state.seqIdx),""));
+  $("charts").innerHTML=charts.join("");
+
+  const sel=$("seqSel");
+  if(sel)sel.onchange=e=>{state.seqIdx=+e.target.value;$("charts").innerHTML=charts.join("");renderSeqOnly();};
+
+  /* 表格 */
+  $("tableNote").textContent="（清洗规则：仅正确试次 + RT "+state.opts.lowRT+"–"+state.opts.highRT+"ms + 条件内±"+state.opts.trimSD+"SD修剪）";
+  let html='<tr><th class="l">#</th><th class="l">数据文件</th><th>试次(用/总)</th><th>一致RT (n)</th><th>不一致RT (n)</th><th>Simon Effect</th><th>一致正确率%</th><th>不一致正确率%</th><th>总错误率%</th><th>状态</th></tr>';
+  subs.forEach((s,i)=>{
+    const short=s.name.replace(/^.*myTouchSimonNew\./,"").replace(/\.data\..*$/,"");
+    html+='<tr'+(s.excludedByErr?' class="excluded"':'')+'><td>'+(i+1)+'</td><td class="l" title="'+s.name+'">'+short+'</td>'
+      +'<td>'+s.nUsed+'/'+s.nTrials+'</td>'
+      +'<td>'+F1(s.meanCon)+' ('+s.con.n+')</td><td>'+F1(s.meanInc)+' ('+s.inc.n+')</td>'
+      +'<td style="font-weight:700;color:'+(s.simon>=0?"#059669":"#ea580c")+'">'+(s.simon>0?"+":"")+F1(s.simon)+'</td>'
+      +'<td>'+F1(100-s.errRateCon)+'</td><td>'+F1(100-s.errRateInc)+'</td><td>'+F1(s.errRate)+'</td>'
+      +'<td>'+(s.excludedByErr?'<span class="tag no">已排除</span>':'<span class="tag ok">纳入</span>')+'</td></tr>';
+  });
+  html+='<tr style="font-weight:700;background:#f9fafb"><td class="l">—</td><td class="l">组平均（纳入 '+g.n+' 名）</td><td></td>'
+    +'<td>'+F1(g.meanCon)+'</td><td>'+F1(g.meanInc)+'</td><td style="color:var(--accent)">'+(g.simon>0?"+":"")+F1(g.simon)+'</td>'
+    +'<td>'+F1(g.accCon)+'</td><td>'+F1(g.accInc)+'</td><td>'+F1(g.errRate)+'</td><td></td></tr>';
+  $("subjTable").innerHTML=html;
+}
+function renderSeqOnly(){
+  const subs=state.subjects,g=state.group;
+  const sel=$("seqSel");if(sel)sel.onchange=renderSeqOnly&&null;
+  const cards=$("charts").children;
+  const seqCard=cards[cards.length-1];
+  const div=document.createElement("div");
+  div.innerHTML='<div style="text-align:right;margin-bottom:6px"><select id="seqSel">'+
+    subs.map((s,i)=>'<option value="'+i+'"'+(i===state.seqIdx?" selected":"")+'">S'+(i+1)+'</option>').join("")+'</select></div>'+svgSequence(subs[state.seqIdx],state.seqIdx);
+  while(seqCard.firstChild)seqCard.removeChild(seqCard.firstChild);
+  while(div.firstChild)seqCard.appendChild(div.firstChild);
+  $("seqSel").onchange=e=>{state.seqIdx=+e.target.value;renderSeqOnly();};
+}
+
+/* ---- 导出 ---- */
+function downloadCSV(name,content){
+  const blob=new Blob(["\ufeff"+content],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+$("dlSummary").onclick=()=>{
+  const g=state.group;let rows=["subject,file,n_congruent_used,n_incongruent_used,congruent_rt_ms,incongruent_rt_ms,simon_effect_ms,acc_congruent_pct,acc_incongruent_pct,error_rate_pct,excluded"];
+  state.subjects.forEach((s,i)=>{rows.push(['S'+(i+1),s.name,s.con.n,s.inc.n,F1(s.meanCon),F1(s.meanInc),F1(s.simon),F1(100-s.errRateCon),F1(100-s.errRateInc),F1(s.errRate),s.excludedByErr?"yes":"no"].join(","));});
+  rows.push(["group","","","",F1(g.meanCon),F1(g.meanInc),F1(g.simon),F1(g.accCon),F1(g.accInc),F1(g.errRate),""].join(","));
+  downloadCSV("Simon_被试汇总.csv",rows.join("\n"));
+};
+$("dlTrials").onclick=()=>{
+  let rows=["subject,trial,condition,rt_ms,status,included,exclusion_reason"];
+  state.subjects.forEach((s,i)=>{s.trials.forEach(t=>{
+    rows.push(['S'+(i+1),t.trial,t.cond===1?"congruent":"incongruent",t.rt,t.status,t.included?"yes":"no",t.included?"":t.reason].join(","));});});
+  downloadCSV("Simon_清洗后逐试次.csv",rows.join("\n"));
+};
+
+/* ---- 事件绑定 ---- */
+$("dropzone").onclick=()=>$("fileInput").click();
+$("fileInput").onchange=e=>loadFiles(e.target.files);
+const dz=$("dropzone");
+dz.ondragover=e=>{e.preventDefault();dz.classList.add("drag");};
+dz.ondragleave=()=>dz.classList.remove("drag");
+dz.ondrop=e=>{e.preventDefault();dz.classList.remove("drag");handleDrop(e.dataTransfer);};
+$("rerunBtn").onclick=runAnalysis;
+[$("lowRT"),$("highRT"),$("trimSD"),$("exErrChk"),$("exErrVal")].forEach(el=>el.onchange=()=>{if(state.files.length)runAnalysis();});
+</script>
+</body>
+</html>

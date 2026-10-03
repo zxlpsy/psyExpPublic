@@ -1,0 +1,18 @@
+# ===== 被试隐私数据：不上传 =====
+experiment_data/
+survey_data/
+
+# 实验导出的原始清单与分析输出（含被试UUID/时间戳）
+exp_datafiles_*.txt
+Rout.txt
+survey.txt
+*.csv
+*.xlsx
+
+# 系统文件
+.DS_Store
+
+# R 会话历史文件
+.Rhistory
+.Rapp.history
+.RData
