@@ -123,48 +123,15 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--muted);fon
 
     <div class="card">
       <details>
-        <summary>结果解读：当前数据（2026-10-02，N=5 预实验）的完整分析结论</summary>
-        <div class="body">
-          <h3 style="margin:8px 0 4px">一、描述统计层 —— 效应长什么样</h3>
-          <ul style="margin:4px 0 10px;padding-left:22px;line-height:1.8">
-            <li><b>一致 RT = 845.16 ms，不一致 RT = 943.07 ms</b>：两条件均偏慢——触屏反应天然慢于文献按键范式（400-600 ms），属范式差异而非数据问题。</li>
-            <li><b>Simon effect = +97.91 ms</b>：位置冲突使反应平均慢约 98 ms，方向完全符合理论预期（刺激空间位置自动激活同侧反应，与任务要求冲突时需额外抑制与纠偏）。数值大于文献典型值（20-40 ms），因触屏整体更慢，效应等比例放大，合理。</li>
-            <li><b>分条件错误率 6.66% vs 9.34%</b>：不一致条件不仅慢、错误也更多（+2.7 个百分点）。RT 与正确率<b>双重代价</b>同向，排除了"牺牲正确率换速度"的速度-准确性权衡解释，说明效应是真实的加工干扰。</li>
-            <li><b>分条件 RT 标准差 168.1 vs 181.1 ms</b>：冲突条件反应波动更大，与干扰理论一致，可作讨论部分补充证据。</li>
-            <li><b>4/5 被试个体效应为正</b>：模式在个体层面基本一致（唯一负值被试源于首试次离群与顺序混淆，见数据质量层）。</li>
-          </ul>
-
-          <h3 style="margin:8px 0 4px">二、推断统计层 —— 证据够不够硬</h3>
-          <ul style="margin:4px 0 10px;padding-left:22px;line-height:1.8">
-            <li><b>t(4) = 1.615，p = 0.182</b>：方向正确但未达显著（门槛 0.05）。若效应真不存在，5 人样本出现这么大组差异的概率约 18%——不够罕见，不能排除巧合。</li>
-            <li><b>Cohen's dz = 0.722</b>：效应量本身估计为中到大。<b>不显著 ≠ 效应小，而是证据不够</b>。dz 说"值得继续查"，p 说"现在还不能定论"。</li>
-            <li><b>95% CI [−70.4, 266.2] ms</b>：效应量不确定性区间跨越 0（这是 p&gt;0.05 的另一种表述）。真实效应可能负 70 也可能正 266，区间太宽，无法据此估计效应真实大小；扩大样本的目标就是把下限收进正数区间。</li>
-            <li><b>三者组合读法</b>：效应不小 + 方向正确 + RT/错误率双指标同向，三点都指向真实效应存在；但 p 不显著 + CI 跨零说明现有证据无法统计确认——这是典型的<b>统计功效不足</b>图景，而非"效应不存在"图景。</li>
-          </ul>
-
-          <h3 style="margin:8px 0 4px">三、数据质量层 —— 结果可信到什么程度</h3>
-          <ul style="margin:4px 0 10px;padding-left:22px;line-height:1.8">
-            <li><b>样本结构</b>：N=5、每人 30 试次（每条件 15 个），远低于文献常规（20-30 人 × 200+ 试次）。每名被试占组均值 20% 权重，个体可剧烈扭曲结果。</li>
-            <li><b>负效应被试（S3，文件 0501）</b>：其 −70 ms 源于实验首个试次 4287 ms 离群值（熟悉任务成本）+ 练习效应与条件的偶然混淆；数据本身零错误，按"不因方向不对剔人"的原则保留是正确的。</li>
-            <li><b>高错误率被试（S5，文件 0829）</b>：总错误率 40%（30 试次错 12 个），清洗后每条件仅剩 7-8 个试次，RT 估计噪音大。可用上方"排除总错误率 &gt; 25%"开关查看剔除后的组统计对比。</li>
-            <li><b>平均错误率 8%</b>：任务难度适中，数据总体可信。</li>
-          </ul>
-
-          <h3 style="margin:8px 0 4px">四、综合结论与 report 写法</h3>
-          <ul style="margin:4px 0 6px;padding-left:22px;line-height:1.8">
-            <li><b>能下的结论</b>（有数据支撑）：初步结果的模式与 Simon 效应一致——位置不一致条件反应更慢（+97.9 ms）、错误率更高（9.3% vs 6.7%）、变异性更大，5 名被试中 4 名表现正向个体效应。</li>
-            <li><b>不能下的结论</b>：不能宣称"Simon 效应显著存在"（p = .182 &gt; .05，95% CI 跨零）；也不能用本数据估计效应真实大小（CI 太宽）。</li>
-            <li><b>正确定位</b>：这是一份合格的<b>预实验（pilot study）</b>——验证了实验程序、清洗流程与分析管线均可正常工作，并给出值得正式检验的假设。</li>
-            <li><b>样本量依据</b>：按 dz = 0.72 做先验功效分析，正式实验约需 <b>17-20 人</b>才能以 80% 功效检出该效应（配对设计）。此句可写入 report 的"未来方向"，说明后续数据收集计划有依据。</li>
-            <li><b>Limitations 应写三点</b>：① 样本量与试次数远低于领域标准，统计功效不足（约 15-20%）；② 个体层面对离群试次敏感（已实证：一个试次可翻转被试效应符号）；③ 无练习 block，首试次承担熟悉化成本（4287 ms 首试次即证据）。</li>
-          </ul>
-          <p style="margin:8px 0 0;color:#6b7280;font-size:12.5px">注：本段解读对应 2026-10-02 下载的 5 名被试预实验数据；后续收集新数据后，上方 KPI 与图表会自动更新，本段文字结论需相应修订。</p>
+        <summary id="interpSummary">结果解读：完整分析结论（载入数据后自动生成，随清洗参数与剔除开关实时更新）</summary>
+        <div class="body" id="interpBody">
+          <p style="color:#6b7280">载入数据并完成分析后，本段将基于当前设置（清洗参数、是否启用错误率剔除及阈值）实时生成"描述—推断—数据质量—综合结论"四层解读；修改上方任一参数、勾选或取消剔除开关后，本段会与 KPI 和所有图表同步更新。</p>
         </div>
       </details>
     </div>
   </div>
 </div>
-<footer>提示：柱状图误差线为 95% CI（被试间）；各图数值均基于上述清洗规则，参数可在上方修改后点击“重新分析”。</footer>
+<footer>提示：柱状图误差线为 95% CI（被试间）；各图数值与底部“结果解读”均基于上述清洗规则，参数与剔除开关在上方修改后，KPI、全部图表与解读文字实时同步更新。</footer>
 
 <script>
 /* CORE START */
@@ -590,8 +557,79 @@ function svgSequence(sub,idx){
 function chartCard(title,note,svg,legend){
   return '<div class="chart-card"><h3>'+title+'</h3><div class="note">'+note+'</div>'+svg+(legend?'<div class="legend">'+legend+'</div>':'')+'</div>';
 }
+
+/* ---- 结果解读：随清洗参数与剔除开关实时同步 ---- */
+const PILOT={n:5,con:845.16,inc:943.07,eff:97.91,dz:0.722,lo:-70.4,hi:266.2};
+function subDesc(s,i){
+  const short=s.name.replace(/^.*myTouchSimonNew\./,"").replace(/\.data\..*$/,"");
+  return "S"+(i+1)+"（文件 "+short+"，错误率 "+F1(s.errRate)+"%）";
+}
+function renderInterpretation(){
+  const g=state.group,subs=state.subjects,opts=state.opts;
+  const sum=$("interpSummary"),body=$("interpBody");
+  if(!sum||!body)return;
+  if(!g){sum.textContent="结果解读：全部被试被排除，无有效数据";
+    body.innerHTML="<p>请放宽错误率剔除阈值或清洗参数后重新分析。</p>";return;}
+  const n=g.n,th=opts.excludeErrThreshold;
+  sum.textContent="结果解读：实时结论 —— 纳入 "+n+"/"+subs.length+" 名被试"+(opts.excludeErrEnabled?"（剔除标准：总错误率 > "+th+"%）":"（未启用错误率剔除）")+"，随上方参数修改自动同步";
+  const F3=v=>isFinite(v)?(Math.round(v*1000)/1000).toString():"—";
+  const pTxt=isFinite(g.p)?(g.p<0.001?"&lt; 0.001":g.p.toFixed(3)):"—";
+  const eCon=100-g.accCon,eInc=100-g.accInc;
+  const idx=subs.map((s,i)=>({s,i}));
+  const inc=idx.filter(x=>!x.s.excludedByErr),exc=idx.filter(x=>x.s.excludedByErr);
+  const cand=opts.excludeErrEnabled?[]:idx.filter(x=>x.s.errRate>th);
+  const pos=inc.filter(x=>x.s.simon>0).length;
+  const negs=inc.filter(x=>x.s.simon<0);
+  const ciW=g.ciHi-g.ciLo,Pw=PILOT.hi-PILOT.lo;
+  const effOK=g.simon>0,dualOK=eInc>eCon,sig=isFinite(g.p)&&g.p<0.05;
+  const dzW=!isFinite(g.dz)?"—":Math.abs(g.dz)>=0.8?"大（≥0.8）":Math.abs(g.dz)>=0.5?"中等（0.5–0.8）":Math.abs(g.dz)>=0.2?"小到中等（0.2–0.5）":"微小（<0.2）";
+  const need=isFinite(g.dz)&&Math.abs(g.dz)>0.01?Math.ceil(7.84/(g.dz*g.dz)):"—";
+  const avgT=Math.round(mean(inc.map(x=>x.s.nTrials)));
+  const negTxt=negs.length?negs.map(x=>"S"+(x.i+1)+"（"+(x.s.simon>0?"+":"")+F1(x.s.simon)+" ms"+(x.s.errRate>25?"，错误率 "+F1(x.s.errRate)+"% 偏高，RT 估计可信度低":"")+"）").join("、"):"无";
+  const s1=[
+    "<li><b>一致 RT = "+F1(g.meanCon)+" ms，不一致 RT = "+F1(g.meanInc)+" ms</b>：与 pilot（N=5，845.2/943.1 ms）相比，两条件分别变化 "+(g.meanCon-PILOT.con>=0?"+":"")+F1(g.meanCon-PILOT.con)+" / "+(g.meanInc-PILOT.inc>=0?"+":"")+F1(g.meanInc-PILOT.inc)+" ms。触屏反应天然慢于文献按键范式（400-600 ms），属范式差异而非数据问题。</li>",
+    "<li><b>Simon effect = "+(g.simon>0?"+":"")+F1(g.simon)+" ms</b>："+(effOK?"方向符合理论预期（刺激空间位置自动激活同侧反应，与任务要求冲突时需额外抑制与纠偏）。当前值为 pilot（97.9 ms）的 "+F1(Math.abs(g.simon)/PILOT.eff*100)+"%——小样本效应量不稳定，随样本扩大仍在收敛，属正常现象。":"方向与经典 Simon 效应相反：优先排查高错误率被试与离群试次（见第三层），而非直接下方向性结论。")+"</li>",
+    "<li><b>分条件错误率 "+F1(eCon)+"% vs "+F1(eInc)+"%</b>："+(dualOK?"不一致条件不仅慢、错误也更多（+"+F1(eInc-eCon)+" 个百分点），RT 与正确率<b>双重代价</b>同向，排除“牺牲正确率换速度”的速度-准确性权衡解释。":"不一致条件错误率并未随之升高，双指标不同向——需留意速度-准确性权衡或清洗参数的影响。")+"组平均错误率 "+F1(g.errRate)+"%（pilot 为 8%）。</li>",
+    "<li><b>分条件 RT 标准差 "+F1(g.sdCon)+" vs "+F1(g.sdInc)+" ms</b>："+(g.sdInc>g.sdCon?"冲突条件反应波动更大，与干扰理论一致，可作讨论部分补充证据。":"两条件波动接近，可在讨论中说明。")+"</li>",
+    "<li><b>"+pos+"/"+n+" 被试个体效应为正</b>（pilot 为 4/5）：负向者："+negTxt+"。</li>"
+  ];
+  const s2=[
+    "<li><b>t("+g.df+") = "+F3(g.t)+"，p = "+pTxt+"</b>："+(sig?"已达显著（p &lt; 0.05）：在当前样本下，位置不一致导致的反应变慢可统计确认，非抽样巧合。":"仍未达显著（门槛 0.05）。若效应真不存在，出现当前组差异的概率约 "+F1(g.p*100)+"%——不够罕见，不能排除巧合。")+"</li>",
+    "<li><b>Cohen's dz = "+F3(g.dz)+"</b>：效应量估计为"+dzW+"（pilot 为 0.722）。"+(sig?"":"<b>不显著 ≠ 效应小，而是证据不够</b>——dz 说“值得继续查”，p 说“现在还不能定论”。")+"</li>",
+    "<li><b>95% CI ["+F1(g.ciLo)+", "+F1(g.ciHi)+"] ms</b>："+(g.ciLo>0?"区间下限已收进正数——这正是扩大样本的目标，效应方向获得区间估计支持。":"仍跨越 0（这是 p &gt; 0.05 的另一种表述）。")+"区间宽度 "+F1(ciW)+" ms，较 pilot 的 "+F1(Pw)+" ms "+(ciW<Pw?"收窄 "+F1((1-ciW/Pw)*100)+"%——<b>样本量增加正在发挥作用</b>。":"未收窄——提示新增数据异质性较高，关注个体差异与数据质量。")+"</li>",
+    "<li><b>组合读法</b>："+((effOK&&dualOK)?"方向正确 + RT/错误率双指标同向 + "+pos+"/"+n+" 个体一致——证据继续指向真实效应存在；":"当前证据模式内部不完全一致（方向或双指标有冲突），优先解决数据质量问题；")+(sig?"且 p 已达显著、CI 不跨零，可统计确认。":"但 p 不显著 + CI 跨零，现有证据仍无法统计确认——依旧是<b>统计功效不足</b>图景，而非“效应不存在”图景。")+"</li>"
+  ];
+  const s3=[
+    "<li><b>样本结构</b>：N="+n+"（共 "+subs.length+" 名，剔除 "+exc.length+" 名）、每人约 "+avgT+" 试次（每条件约 "+Math.round(avgT/2)+" 个），仍低于文献常规（20-30 人 × 200+ 试次），个体效应对单试次仍敏感。</li>"
+  ];
+  if(opts.excludeErrEnabled){
+    s3.push(exc.length?"<li><b>已按“总错误率 &gt; "+th+"%”剔除 "+exc.length+" 名被试</b>："+exc.map(x=>subDesc(x.s,x.i)).join("、")+"。剔除属于分析决策，请写入方法部分（含选择该阈值的理由与被试编号）。</li>":"<li><b>剔除开关已启用（阈值 "+th+"%）</b>：当前无人超过阈值，全部 "+n+" 名纳入。</li>");
+  }else{
+    s3.push(cand.length?"<li><b>高错误率被试（"+cand.length+"/"+subs.length+"，待决策）</b>："+cand.map(x=>subDesc(x.s,x.i)).join("、")+"。当前未启用剔除；勾选上方开关或调整阈值后，组统计与本段解读立即同步更新。以何阈值为准须作为分析决策预先确定并写入方法部分。</li>":"<li><b>数据质量整体良好</b>：无总错误率超过 "+th+"% 的被试。</li>");
+  }
+  const firstOut=inc.filter(x=>x.s.simon<0&&x.s.trials[0]&&x.s.trials[0].rt>opts.highRT);
+  if(firstOut.length)s3.push("<li><b>负效应与首试次</b>："+firstOut.map(x=>"S"+(x.i+1)).join("、")+" 的首个试次 RT 超过清洗上限（熟悉任务成本），其负向效应可能部分源于此；按“不因方向不对剔人”的原则保留是正确的，可在敏感性分析中检查。</li>");
+  s3.push("<li><b>无练习 block</b>：首试次承担熟悉化成本的问题依然存在，建议在敏感性分析中检查每名被试的首试次。</li>");
+  const s4=[
+    "<li><b>能下的结论</b>（有数据支撑）："+((effOK&&dualOK)?"结果模式与 Simon 效应一致——不一致条件更慢（"+(g.simon>0?"+":"")+F1(g.simon)+" ms）、错误率更高（"+F1(eInc)+"% vs "+F1(eCon)+"%）、变异性"+(g.sdInc>g.sdCon?"更大":"相近")+"，"+n+" 名纳入被试中 "+pos+" 名表现正向个体效应。":"当前设置下（纳入 "+n+"/"+subs.length+" 名），结果模式与经典 Simon 效应尚不完全一致，暂不宜下方向性结论。")+"</li>",
+    "<li><b>不能下的结论</b>："+(sig?"（已达显著；但样本量仍小于领域标准，注意结论的外部效度与稳健性）":"不能宣称“Simon 效应显著存在”（p = "+pTxt+" &gt; .05，95% CI 跨零）；也不能用当前数据精确估计效应真实大小（CI 仍偏宽）。")+"</li>",
+    "<li><b>当前定位</b>：数据收集中期。"+(ciW<Pw?"CI 宽度已从 pilot 的 "+F1(Pw)+" ms 收窄至 "+F1(ciW)+" ms，样本量正在发挥作用；":"CI 宽度为 "+F1(ciW)+" ms；")+(sig?"且已跨过显著性门槛。":"但尚未跨过显著性门槛——这是功效曲线爬坡的正常阶段，不是方向性挫折。")+"</li>",
+    "<li><b>样本量规划</b>：按当前 dz = "+F3(g.dz)+" 做先验功效分析，80% 功效约需 <b>"+need+" 人</b>（配对设计）；按 pilot 的 dz = 0.722 估计约需 17-20 人。稳妥目标是 20-30 人（同时落在文献常规范围内），若收满后仍不显著，需结合效应量趋势重新评估。此句可写入 report 的“未来方向”。</li>",
+    "<li><b>Limitations 应写四点</b>：① 样本量与试次数仍低于领域标准，统计功效不足；② "+(exc.length?exc.length+" 名高错误率被试已按 &gt;"+th+"% 标准剔除（"+exc.map(x=>"S"+(x.i+1)).join("、")+"），该标准应在进一步收集前预先确定并写入方法":(cand.length?"高错误率被试占 "+cand.length+"/"+subs.length+"，剔除标准应在进一步收集前预先确定并写入方法":"数据质量整体良好，仍建议预先确定剔除标准写入方法"))+"；③ 每人试次数有限，个体层面对离群试次敏感；④ 无练习 block，首试次承担熟悉化成本。</li>"
+  ];
+  const note="<p style='margin:8px 0 0;color:#6b7280;font-size:12.5px'>注：本段由网页根据当前设置实时生成——清洗参数：RT "+opts.lowRT+"–"+opts.highRT+" ms、条件内±"+opts.trimSD+"SD 修剪；"+(opts.excludeErrEnabled?"剔除总错误率 &gt; "+th+"% 的被试（已剔 "+exc.length+" 名）":"未启用错误率剔除")+"；基于 "+n+" 名被试（共载入 "+subs.length+" 份）。修改任一参数或开关后，本段与 KPI、图表同步更新，无需手工修订。Pilot（N=5）的解读保留在旧文件夹 2026_10_02_15_08 的网页中作对比。</p>";
+  const h=t=>"<h3 style='margin:8px 0 4px'>"+t+"</h3>";
+  const ul=a=>"<ul style='margin:4px 0 10px;padding-left:22px;line-height:1.8'>"+a.join("")+"</ul>";
+  body.innerHTML=h("一、描述统计层 —— 效应长什么样")+ul(s1)
+    +h("二、推断统计层 —— 证据够不够硬")+ul(s2)
+    +h("三、数据质量层 —— 结果可信到什么程度")+ul(s3)
+    +h("四、综合结论与 report 写法")+ul(s4)
+    +note;
+}
+
 function render(){
   const g=state.group,subs=state.subjects;
+  renderInterpretation();
   if(!g){return;}
   $("results").hidden=false;
 
