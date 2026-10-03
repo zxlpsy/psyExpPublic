@@ -114,7 +114,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--muted);fon
             <li><b>剔除错误与超时试次</b>：RT 只统计状态码=1 的正确试次；按错与超时（RT=5000ms）试次剔除，单独汇总为正确率指标。</li>
             <li><b>剔除极端 RT</b>：剔除 &lt;200ms 的预期反应与 &gt;1500ms 的过长反应（热身走神试次）。</li>
             <li><b>被试内、条件内 ±3SD 修剪</b>：对每名被试每个条件，剔除偏离该条件均值 3 个标准差之外的试次。</li>
-            <li><b>统计</b>：一致/不一致 RT = 清洗后条件均值；Simon effect = 不一致 RT − 一致 RT；组水平取各被试均值，并以配对样本 t 检验考察显著性；误差线为被试间 95% 置信区间。</li>
+            <li><b>统计</b>：一致/不一致 RT = 清洗后条件均值；Simon effect = 不一致 RT − 一致 RT；组水平取各被试均值，并以配对样本 t 检验考察显著性，同时报告效应量 Cohen's dz、Simon effect 的 95% 置信区间、分条件错误率与分条件 RT 标准差；误差线为被试间 95% 置信区间。</li>
             <li><b>分布分析</b>：按 Simon 任务文献惯例补充 RT 分布直方图、箱线图与 delta plot（效应量随 RT 五分位 Vincentile 的变化），用于刻画效应随反应速度的动态变化。</li>
           </ol>
         </div>
@@ -267,6 +267,10 @@ function analyzeGroup(subjects){
     errRate:mean(inc.map(s=>s.errRate))};
   const tt=tTestPaired(incArr,conArr);
   g.t=tt.t;g.df=tt.df;g.p=tt.p;g.dz=tt.dz;
+  const diffs=inc.map(s=>s.meanInc-s.meanCon),dSd=sd(diffs);
+  g.sdCon=n>1?sd(conArr):NaN;g.sdInc=n>1?sd(incArr):NaN;
+  g.ciLo=n>1&&isFinite(dSd)?g.simon-tc*dSd/Math.sqrt(n):NaN;
+  g.ciHi=n>1&&isFinite(dSd)?g.simon+tc*dSd/Math.sqrt(n):NaN;
   const bins=5,dc=[],di=[];
   inc.forEach(s=>{
     dc.push(binMeans(s.con.rts.slice().sort((a,b)=>a-b),bins));
@@ -550,7 +554,11 @@ function render(){
     +'<div class="kpi"><div class="t">不一致条件平均 RT</div><div class="v" style="color:var(--inc)">'+F1(g.meanInc)+'<small> ms</small></div></div>'
     +'<div class="kpi hl"><div class="t">Simon Effect</div><div class="v" style="color:'+effColor+'">'+(g.simon>0?"+":"")+F1(g.simon)+'<small> ms</small></div></div>'
     +'<div class="kpi"><div class="t">配对 t 检验</div><div class="v">t('+g.df+')='+F2(g.t)+'<small>, p='+pTxt+'</small></div></div>'
-    +'<div class="kpi"><div class="t">平均错误率</div><div class="v">'+F1(g.errRate)+'<small> %</small></div></div>';
+    +'<div class="kpi"><div class="t">效应量 dz（配对 Cohen）</div><div class="v">'+(isFinite(g.dz)?F2(g.dz):'—')+'</div></div>'
+    +'<div class="kpi"><div class="t">Simon effect 95% CI</div><div class="v">'+(isFinite(g.ciLo)?'['+F1(g.ciLo)+', '+F1(g.ciHi)+']<small> ms</small>':'—')+'</div></div>'
+    +'<div class="kpi"><div class="t">平均错误率</div><div class="v">'+F1(g.errRate)+'<small> %</small></div></div>'
+    +'<div class="kpi"><div class="t">分条件错误率（一致/不一致）</div><div class="v">'+F1(100-g.accCon)+'<small> / '+F1(100-g.accInc)+' %</small></div></div>'
+    +'<div class="kpi"><div class="t">分条件 RT 标准差（一致/不一致）</div><div class="v">'+F1(g.sdCon)+'<small> / '+F1(g.sdInc)+' ms</small></div></div>';
   function F2(v){return isFinite(v)?(Math.round(v*1000)/1000).toString():"—";}
 
   const charts=[];

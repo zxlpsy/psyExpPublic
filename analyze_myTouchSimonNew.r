@@ -61,8 +61,10 @@ for (f in data_files) {
         cg_rt  <- psytkTrim2(x_ok$RT[x_ok$congruency == 1], trimSD, lowestRT, highestRT)
         icg_rt <- psytkTrim2(x_ok$RT[x_ok$congruency == 2], trimSD, lowestRT, highestRT)
 
-        ## 错误率 = (按错 + 超时) 占全部 test 试次的比例
+        ## 错误率: 总体 + 分条件 (文献惯例: 不一致条件错误率应更高)
         err_rate <- mean(x$status[x$block == "test"] != 1) * 100
+        cg_err   <- mean(x$status[x$block == "test" & x$congruency == 1] != 1) * 100
+        icg_err  <- mean(x$status[x$block == "test" & x$congruency == 2] != 1) * 100
 
         results <- rbind(results, data.frame(
             file              = basename(f),
@@ -71,7 +73,11 @@ for (f in data_files) {
             Congruent_RT      = round(mean(cg_rt), 2),
             Incongruent_RT    = round(mean(icg_rt), 2),
             SimonEffect_ms    = round(mean(icg_rt) - mean(cg_rt), 2),
+            Congruent_SD      = round(sd(cg_rt), 1),
+            Incongruent_SD    = round(sd(icg_rt), 1),
             ErrorRate_percent = round(err_rate, 1),
+            Congruent_PE      = round(cg_err, 1),
+            Incongruent_PE    = round(icg_err, 1),
             excluded          = excludeErrEnabled && err_rate > excludeErrThreshold
         ))
     }
@@ -110,6 +116,24 @@ cat("Incongruent (位置不一致条件) 平均反应时:",
 cat("Simon Effect (西蒙效应量, 不一致 - 一致):",
     round(mean(results_included$SimonEffect_ms, na.rm = TRUE), 2), "ms\n")
 cat("平均错误率:", round(mean(results_included$ErrorRate_percent, na.rm = TRUE), 2), "%\n")
+cat("分条件错误率: 一致",
+    round(mean(results_included$Congruent_PE, na.rm = TRUE), 2), "% vs 不一致",
+    round(mean(results_included$Incongruent_PE, na.rm = TRUE), 2), "%\n")
+cat("分条件RT标准差: 一致",
+    round(mean(results_included$Congruent_SD, na.rm = TRUE), 1), "ms / 不一致",
+    round(mean(results_included$Incongruent_SD, na.rm = TRUE), 1), "ms\n")
+
+## 效应量 Cohen's dz (配对) 与 Simon effect 的 95% 置信区间 (基于被试内差值)
+diffs <- results_included$Incongruent_RT - results_included$Congruent_RT
+if (length(diffs) >= 2 && sd(diffs) > 0) {
+    dz <- mean(diffs) / sd(diffs)
+    se <- sd(diffs) / sqrt(length(diffs))
+    ci_lo <- mean(diffs) - qt(0.975, length(diffs) - 1) * se
+    ci_hi <- mean(diffs) + qt(0.975, length(diffs) - 1) * se
+    cat("效应量 Cohen's dz (配对):", round(dz, 3), "\n")
+    cat("Simon effect 95% CI: [", round(ci_lo, 2), ",", round(ci_hi, 2), "] ms\n")
+}
+
 tt <- try(t.test(results_included$Incongruent_RT, results_included$Congruent_RT,
                  paired = TRUE), silent = TRUE)
 if (!inherits(tt, "try-error")) {
