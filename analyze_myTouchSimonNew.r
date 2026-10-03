@@ -18,9 +18,15 @@ excludeErrThreshold = 25
 followsuccess = F
 conditions = c(2)      ## 按第2列 (congruent/incongruent) 分组
 
-## 确保工作目录为本数据文件夹 (脚本需在 PsyToolkitData 文件夹内运行)
-if (!file.exists(paste("exp_datafiles_", expname, ".txt", sep = ""))) {
-    setwd("/Users/zhangxiaolan/Downloads/2周二午 5060 cognitive psy/PsyToolkitData_mySimon_2026_10_02_15_08")
+## 确保工作目录为本数据文件夹
+## (兼容 RStudio: 其默认工作目录通常是用户主目录, 需自动切换到数据文件夹)
+dataDir = "/Users/zhangxiaolan/Downloads/2周二午 5060 cognitive psy/PsyToolkitData_mySimon_2026_10_02_15_08"
+if (!dir.exists("experiment_data")) {
+    setwd(dataDir)
+}
+if (!dir.exists("experiment_data")) {
+    stop("未找到 experiment_data 文件夹! 请确认本脚本与 experiment_data 文件夹在同一目录,
+         或在 RStudio 中执行: Session > Set Working Directory > To Source File Location")
 }
 
 ## ============ RT 修剪函数 (Simon 实验标准数据清洗) ============
@@ -69,6 +75,11 @@ for (f in data_files) {
             excluded          = excludeErrEnabled && err_rate > excludeErrThreshold
         ))
     }
+}
+
+## 若未读到任何数据, 立即报出清晰的错误提示 (而非后续的模糊报错)
+if (nrow(results) == 0) {
+    stop("experiment_data 文件夹中没有可分析的数据文件 (*.data.*.txt)。")
 }
 
 ## 保存每个被试的结果到 CSV

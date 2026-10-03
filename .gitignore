@@ -9,6 +9,9 @@ survey.txt
 *.csv
 *.xlsx
 
+# 由被试数据生成的图表（含每被试效应值，不上传）
+viz_*.png
+
 # 系统文件
 .DS_Store
 
