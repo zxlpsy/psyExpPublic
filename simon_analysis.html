@@ -129,6 +129,18 @@ footer{max-width:1180px;margin:0 auto;padding:0 20px 30px;color:var(--muted);fon
         </div>
       </details>
     </div>
+  <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="ghost" id="copyRaw">复制论文段落（纯文本）</button>
+        <span style="font-size:12.5px;color:var(--muted)" id="rawMeta"></span>
+      </div>
+      <details>
+        <summary id="rawSummary">原始数据描述：本次数据的完整清单（可直接写入论文 Results，随所选文件夹实时更新）</summary>
+        <div class="body" id="rawBody">
+          <p style="color:#6b7280">载入 experiment_data 文件夹后，本部分将自动汇总该批次的原始数据规模、字段结构、设计平衡性、每名被试的试次构成，并生成一段可直接粘贴进论文 Results 的中文描述。</p>
+        </div>
+      </details>
+    </div>
   </div>
 </div>
 <footer>提示：柱状图误差线为 95% CI（被试间）；各图数值与底部“结果解读”均基于上述清洗规则，参数与剔除开关在上方修改后，KPI、全部图表与解读文字实时同步更新。</footer>
@@ -199,7 +211,7 @@ function parseDataFile(name,text){
     if(f.length<7||!f[0]||!isNaN(parseFloat(f[0])))continue;
     const cong=parseInt(f[3]),status=parseInt(f[5]),rt=parseFloat(f[6]);
     if(!isFinite(cong)||!isFinite(status)||!isFinite(rt))continue;
-    rows.push({block:f[0],condWord:f[1],color:f[2],congruency:cong,status:status,rt:rt});
+    rows.push({block:f[0],condWord:f[1],color:f[2],congruency:cong,position:f[4],status:status,rt:rt,x:parseFloat(f[7]),y:parseFloat(f[8])});
   }
   return{name,rows};
 }
@@ -627,9 +639,132 @@ function renderInterpretation(){
     +note;
 }
 
+/* ---- 原始数据描述：随所选文件夹实时更新 ---- */
+function computeRawStats(){
+  if(!state.files||!state.files.length)return null;
+  const per=state.files.map(f=>{
+    const test=f.rows.filter(r=>r.block==="test");
+    const blocks=Array.from(new Set(f.rows.map(r=>r.block)));
+    const st={1:0,2:0,3:0};
+    test.forEach(r=>{if(st[r.status]!==undefined)st[r.status]++;});
+    const m=f.name.match(/(\d{4}-\d{2}-\d{2})-(\d{2})(\d{2})\.data\./);
+    return{label:m?(m[1].slice(5)+" "+m[2]+":"+m[3]):f.name.slice(0,20),
+      date:m?m[1]:null,time:m?(m[2]+":"+m[3]):null,
+      n:test.length,blocks,st,
+      errRate:test.length?((st[2]+st[3])/test.length*100):NaN};
+  });
+  const all=[];
+  state.files.forEach(f=>f.rows.forEach(r=>{if(r.block==="test")all.push(r);}));
+  const tally=fn=>{const m={};all.forEach(r=>{const k=fn(r);if(k!==undefined&&k!==null&&k!=="")m[k]=(m[k]||0)+1;});return m;};
+  const status={1:0,2:0,3:0};
+  all.forEach(r=>{if(status[r.status]!==undefined)status[r.status]++;});
+  const rts=all.map(r=>r.rt).filter(isFinite);
+  const okRts=all.filter(r=>r.status===1).map(r=>r.rt).filter(isFinite);
+  const sideByPos={};
+  all.filter(r=>r.status===1&&isFinite(r.x)).forEach(r=>{
+    const k=String(r.position),s=r.x<0?"L":"R";
+    sideByPos[k]=sideByPos[k]||{L:0,R:0};sideByPos[k][s]++;
+  });
+  const posMap=Object.keys(sideByPos).sort((a,b)=>a-b).map(k=>{
+    const L=sideByPos[k].L||0,R=sideByPos[k].R||0;
+    return{code:k,side:(L>=R?"左":"右"),n:L+R,rate:(L+R)?Math.max(L,R)/(L+R)*100:NaN};
+  });
+  let agreeOK=0,agreeTot=0;
+  posMap.forEach(m=>{
+    all.filter(r=>r.status===1&&String(r.position)===m.code&&isFinite(r.x)).forEach(r=>{
+      agreeTot++;if((r.x<0?"L":"R")===(m.side==="左"?"L":"R"))agreeOK++;});
+  });
+  const dates=Array.from(new Set(per.map(p=>p.date).filter(Boolean))).sort();
+  const sess=dates.map(d=>d.slice(5)+"："+per.filter(p=>p.date===d).length+" 人").join("；");
+  const times=per.map(p=>p.time).filter(Boolean).sort();
+  const timed=per.filter(p=>p.date&&p.time).sort((a,b)=>((a.date+a.time)<(b.date+b.time))?-1:1);
+  const blocksAll=Array.from(new Set(per.reduce((a,p)=>a.concat(p.blocks),[])));
+  const nMin=Math.min(...per.map(p=>p.n)),nMax=Math.max(...per.map(p=>p.n));
+  return{per,all,nFiles:per.length,nTrials:all.length,nMin,nMax,
+    nCon:all.filter(r=>r.congruency===1).length,nInc:all.filter(r=>r.congruency===2).length,
+    colors:tally(r=>r.color),positions:tally(r=>r.position),status,
+    rtMin:rts.length?Math.min(...rts):NaN,rtMax:rts.length?Math.max(...rts):NaN,
+    okMin:okRts.length?Math.min(...okRts):NaN,okMax:okRts.length?Math.max(...okRts):NaN,
+    posMap,agreeOK,agreeTot,sess,first:times[0]||"—",last:times[times.length-1]||"—",
+    firstFull:timed.length?timed[0].date+" "+timed[0].time:"—",
+    lastFull:timed.length?timed[timed.length-1].date+" "+timed[timed.length-1].time:"—",
+    blocksAll};
+}
+const CN_COLOR={red:"红",green:"绿",blue:"蓝",yellow:"黄"};
+function rawParagraph(R){
+  const pc=v=>(v*100).toFixed(1)+"%";
+  const cnames=Object.keys(R.colors).sort((a,b)=>R.colors[b]-R.colors[a])
+    .map(k=>(CN_COLOR[k]||k)+" "+R.colors[k]).join(" / ");
+  const pkeys=Object.keys(R.positions).sort((a,b)=>a-b);
+  const pvals=pkeys.map(k=>R.positions[k]).join(" / ");
+  const perTrial=R.nMin===R.nMax?R.nMax+" 试次":R.nMin+"–"+R.nMax+" 试次";
+  const perHalf=R.nMin===R.nMax?Math.round(R.nMax/2)+" 试次":"约 "+Math.round(R.nMin/2)+"–"+Math.round(R.nMax/2)+" 试次";
+  const blockTxt=R.blocksAll.length===1&&R.blocksAll[0]==="test"
+    ?"全部试次均来自正式区块（test），本实验未设置练习区块。"
+    :"试次来自区块："+R.blocksAll.join("、")+"。";
+  const posTxt=(function(){
+    const L=R.posMap.filter(m=>m.side==="左").map(m=>m.code),Rr=R.posMap.filter(m=>m.side==="右").map(m=>m.code);
+    const a=L.length?"编码 "+L.join(" / ")+" 对应左侧反应区":"",b=Rr.length?"编码 "+Rr.join(" / ")+" 对应右侧反应区":"";
+    return(a&&b)?(a+"，"+b):(a||b);
+  })();
+  return "原始数据描述（可直接用于论文 Results）\n\n"
+    +"本研究使用触屏版 Simon 任务（myTouchSimonNew）在 PsyToolkit 平台上采集数据。经 PsyToolkit 导出后，experiment_data/ 文件夹中包含 "+R.nFiles+" 份被试级原始数据文件（每名被试 1 份），共记录 "+R.nTrials+" 个试次（每名被试 "+perTrial+"，一致与不一致条件各 "+perHalf+"），采集时间为 "+R.firstFull+" 至 "+R.lastFull+"（分时段： "+R.sess+"）。"
+    +"数据文件为无表头纯文本，每行 9 个字段，依次为：区块名、一致性（文字标签）、刺激颜色、一致性编码（1 = 一致，2 = 不一致）、反应位置编码（1–4）、结果状态码（1 = 正确，2 = 按错，3 = 超时）、反应时（毫秒，超时记为 5000 ms）以及触摸落点的 X、Y 坐标；文件名仅含日期时间与匿名随机 UUID，不含姓名或学号。"+blockTxt
+    +"设计平衡性检查显示，一致与不一致试次（"+R.nCon+" / "+R.nInc+"）、不同刺激颜色（"+cnames+"）及各反应位置编码（编码 "+pkeys.join(" / ")+"："+pvals+"）分布均衡。"
+    +"未经清洗的原始记录中，正确试次 "+R.status[1]+" 个（"+pc(R.status[1]/R.nTrials)+"）、按错 "+R.status[2]+" 个（"+pc(R.status[2]/R.nTrials)+"）、超时 "+R.status[3]+" 个（"+pc(R.status[3]/R.nTrials)+"）；原始反应时记录介于 "+F0(R.rtMin)+"–"+F0(R.rtMax)+" ms 之间，其中正确试次的反应时介于 "+F0(R.okMin)+"–"+F0(R.okMax)+" ms（5000 ms 为超时哨兵值，不参与分析）。"
+    +"位置编码与触摸坐标的一致性检查显示，"+posTxt+"，正确试次中二者一致的比例为 "+F1(R.agreeTot?R.agreeOK/R.agreeTot*100:NaN)+"%（"+R.agreeOK+" / "+R.agreeTot+"）。";
+}
+function renderRawDescription(){
+  const body=$("rawBody"),meta=$("rawMeta");
+  if(!body)return;
+  const R=computeRawStats();
+  if(!R){body.innerHTML="<p>请先载入 experiment_data 文件夹。</p>";return;}
+  const pc=v=>(v*100).toFixed(1)+"%";
+  if(meta)meta.textContent=R.nFiles+" 份文件 · "+R.nTrials+" 个试次 · "+(R.per[0].date||"—")+" 至 "+(R.per[R.per.length-1].date||"—");
+  const kv=(a,b)=>"<tr><td class='l'>"+a+"</td><td class='l'>"+b+"</td></tr>";
+  const ob="<table style='width:auto'>"
+    +kv("被试文件数",R.nFiles+" 份（每名被试 1 份）")
+    +kv("试次总数",R.nTrials+" 个（每名被试 "+(R.nMin===R.nMax?R.nMax:R.nMin+"–"+R.nMax)+" 个）")
+    +kv("区块",R.blocksAll.join("、"))
+    +kv("采集时段",R.sess)
+    +kv("条件分布","一致 "+R.nCon+" / 不一致 "+R.nInc)
+    +kv("颜色分布",Object.keys(R.colors).sort((a,b)=>R.colors[b]-R.colors[a]).map(k=>(CN_COLOR[k]||k)+" "+R.colors[k]).join(" / "))
+    +kv("位置编码分布",Object.keys(R.positions).sort((a,b)=>a-b).map(k=>k+":"+R.positions[k]).join(" / "))
+    +kv("原始结果状态","正确 "+R.status[1]+"（"+pc(R.status[1]/R.nTrials)+"）· 按错 "+R.status[2]+"（"+pc(R.status[2]/R.nTrials)+"）· 超时 "+R.status[3]+"（"+pc(R.status[3]/R.nTrials)+"）")
+    +kv("反应时范围（全部记录）",F0(R.rtMin)+" – "+F0(R.rtMax)+" ms")
+    +kv("反应时范围（仅正确试次）",F0(R.okMin)+" – "+F0(R.okMax)+" ms")
+    +kv("位置编码 → 触摸侧别",R.posMap.map(m=>"编码 "+m.code+" → "+m.side+"侧（"+F1(m.rate)+"%）").join("；"))
+    +kv("编码与坐标一致率",F1(R.agreeTot?R.agreeOK/R.agreeTot*100:NaN)+"%（"+R.agreeOK+" / "+R.agreeTot+" 个正确试次）")
+    +"</table>";
+  let pt="<tr><th class='l'>被试（日期 时间）</th><th>试次</th><th>正确</th><th>按错</th><th>超时</th><th>总错误率</th></tr>";
+  R.per.forEach(p=>{
+    pt+="<tr><td class='l'>"+p.label+"</td><td>"+p.n+"</td><td>"+p.st[1]+"</td><td>"+p.st[2]+"</td><td>"+p.st[3]+"</td><td>"+F1(p.errRate)+"%</td></tr>";
+  });
+  pt+="<tr style='font-weight:700;background:#f9fafb'><td class='l'>合计 / 组平均</td><td>"+R.nTrials+"</td><td>"+R.status[1]+"</td><td>"+R.status[2]+"</td><td>"+R.status[3]+"</td><td>"+F1(R.status[2]+R.status[3])+"%</td></tr>";
+  body.innerHTML="<h3 style='margin:8px 0 4px'>一、本批次数据概览</h3>"+ob
+    +"<h3 style='margin:8px 0 4px'>二、每名被试的原始试次构成（未经任何清洗）</h3><div style='overflow:auto'><table>"+pt+"</table></div>"
+    +"<h3 style='margin:8px 0 4px'>三、论文段落（点上方按钮可复制纯文本）</h3>"
+    +"<div style='background:#f8faff;border:1px solid #e0e7ff;border-radius:10px;padding:12px 14px;line-height:1.8'>"+rawParagraph(R).split("\n\n").map(x=>"<p style='margin:0 0 8px'>"+x+"</p>").join("")+"</div>";
+}
+$("copyRaw").onclick=()=>{
+  const R=computeRawStats();
+  if(!R){alert("请先载入 experiment_data 文件夹。");return;}
+  const txt=rawParagraph(R),btn=$("copyRaw"),old=btn.textContent;
+  const done=()=>{btn.textContent="已复制到剪贴板 ✓";setTimeout(()=>btn.textContent=old,1600);};
+  const fallback=()=>{
+    const ta=document.createElement("textarea");
+    ta.value=txt;document.body.appendChild(ta);ta.select();
+    try{document.execCommand("copy");done();}catch(err){alert("自动复制失败，请手动选中下方段落复制。");}
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,fallback);
+  else fallback();
+};
+
 function render(){
   const g=state.group,subs=state.subjects;
   renderInterpretation();
+  renderRawDescription();
   if(!g){return;}
   $("results").hidden=false;
 
