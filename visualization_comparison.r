@@ -8,7 +8,7 @@
 ##   - 用 Rscript 运行时: 保存为 PNG 到本文件夹
 ## =====================================================================
 if (!dir.exists("experiment_data"))
-    setwd("/Users/zhangxiaolan/Downloads/2周二午 5060 cognitive psy/PsyToolkitData_mySimon_2026_10_02_15_08")
+    setwd("/Users/zhangxiaolan/Downloads/2周二午 5060 cognitive psy/PsyToolkitData_mySimon_2026_10_03_15_12")
 
 ## ---------- 数据准备与清洗 ----------
 files <- list.files("experiment_data", full.names = TRUE)

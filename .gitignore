@@ -12,10 +12,12 @@ survey.txt
 # 由被试数据生成的图表（含每被试效应值，不上传）
 viz_*.png
 
+# 论文草稿类文档（非代码）
+*.pdf
+
 # 系统文件
 .DS_Store
 
 # R 会话历史文件
 .Rhistory
 .Rapp.history
-.RData

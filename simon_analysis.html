@@ -384,6 +384,7 @@ function svgBarChart(items,yLabel,yFrom0){
   let ymin=yFrom0?0:Infinity;
   if(!yFrom0){items.forEach(it=>{ymin=Math.min(ymin,it.value-(it.ci||0));});ymin=Math.max(0,ymin-20);}
   ymax=ymax*1.18+(yFrom0?0:0);
+  if(!(ymax>ymin+1e-9))ymax=ymin+1;
   const yv=v=>T+h-(v-ymin)/(ymax-ymin)*h;
   const ticks=niceTicks(ymin,ymax,5);
   let s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
@@ -651,6 +652,8 @@ function computeRawStats(){
     return{label:m?(m[1].slice(5)+" "+m[2]+":"+m[3]):f.name.slice(0,20),
       date:m?m[1]:null,time:m?(m[2]+":"+m[3]):null,
       n:test.length,blocks,st,
+      nCon:test.filter(r=>r.congruency===1).length,
+      nInc:test.filter(r=>r.congruency===2).length,
       errRate:test.length?((st[2]+st[3])/test.length*100):NaN};
   });
   const all=[];
@@ -682,6 +685,8 @@ function computeRawStats(){
   const nMin=Math.min(...per.map(p=>p.n)),nMax=Math.max(...per.map(p=>p.n));
   return{per,all,nFiles:per.length,nTrials:all.length,nMin,nMax,
     nCon:all.filter(r=>r.congruency===1).length,nInc:all.filter(r=>r.congruency===2).length,
+    conMin:Math.min(...per.map(p=>p.nCon)),conMax:Math.max(...per.map(p=>p.nCon)),
+    incMin:Math.min(...per.map(p=>p.nInc)),incMax:Math.max(...per.map(p=>p.nInc)),
     colors:tally(r=>r.color),positions:tally(r=>r.position),status,
     rtMin:rts.length?Math.min(...rts):NaN,rtMax:rts.length?Math.max(...rts):NaN,
     okMin:okRts.length?Math.min(...okRts):NaN,okMax:okRts.length?Math.max(...okRts):NaN,
@@ -698,7 +703,8 @@ function rawParagraph(R){
   const pkeys=Object.keys(R.positions).sort((a,b)=>a-b);
   const pvals=pkeys.map(k=>R.positions[k]).join(" / ");
   const perTrial=R.nMin===R.nMax?R.nMax+" 试次":R.nMin+"–"+R.nMax+" 试次";
-  const perHalf=R.nMin===R.nMax?Math.round(R.nMax/2)+" 试次":"约 "+Math.round(R.nMin/2)+"–"+Math.round(R.nMax/2)+" 试次";
+  const conTxt=R.conMin===R.conMax?R.conMin+" 个":R.conMin+"–"+R.conMax+" 个";
+  const incTxt=R.incMin===R.incMax?R.incMin+" 个":R.incMin+"–"+R.incMax+" 个";
   const blockTxt=R.blocksAll.length===1&&R.blocksAll[0]==="test"
     ?"全部试次均来自正式区块（test），本实验未设置练习区块。"
     :"试次来自区块："+R.blocksAll.join("、")+"。";
@@ -708,7 +714,7 @@ function rawParagraph(R){
     return(a&&b)?(a+"，"+b):(a||b);
   })();
   return "原始数据描述（可直接用于论文 Results）\n\n"
-    +"本研究使用触屏版 Simon 任务（myTouchSimonNew）在 PsyToolkit 平台上采集数据。经 PsyToolkit 导出后，experiment_data/ 文件夹中包含 "+R.nFiles+" 份被试级原始数据文件（每名被试 1 份），共记录 "+R.nTrials+" 个试次（每名被试 "+perTrial+"，一致与不一致条件各 "+perHalf+"），采集时间为 "+R.firstFull+" 至 "+R.lastFull+"（分时段： "+R.sess+"）。"
+    +"本研究使用触屏版 Simon 任务（myTouchSimonNew）在 PsyToolkit 平台上采集数据。经 PsyToolkit 导出后，experiment_data/ 文件夹中包含 "+R.nFiles+" 份被试级原始数据文件（每名被试 1 份），共记录 "+R.nTrials+" 个试次（每名被试 "+perTrial+"，其中一致 "+conTxt+"、不一致 "+incTxt+"），采集时间为 "+R.firstFull+" 至 "+R.lastFull+"（分时段： "+R.sess+"）。"
     +"数据文件为无表头纯文本，每行 9 个字段，依次为：区块名、一致性（文字标签）、刺激颜色、一致性编码（1 = 一致，2 = 不一致）、反应位置编码（1–4）、结果状态码（1 = 正确，2 = 按错，3 = 超时）、反应时（毫秒，超时记为 5000 ms）以及触摸落点的 X、Y 坐标；文件名仅含日期时间与匿名随机 UUID，不含姓名或学号。"+blockTxt
     +"设计平衡性检查显示，一致与不一致试次（"+R.nCon+" / "+R.nInc+"）、不同刺激颜色（"+cnames+"）及各反应位置编码（编码 "+pkeys.join(" / ")+"："+pvals+"）分布均衡。"
     +"未经清洗的原始记录中，正确试次 "+R.status[1]+" 个（"+pc(R.status[1]/R.nTrials)+"）、按错 "+R.status[2]+" 个（"+pc(R.status[2]/R.nTrials)+"）、超时 "+R.status[3]+" 个（"+pc(R.status[3]/R.nTrials)+"）；原始反应时记录介于 "+F0(R.rtMin)+"–"+F0(R.rtMax)+" ms 之间，其中正确试次的反应时介于 "+F0(R.okMin)+"–"+F0(R.okMax)+" ms（5000 ms 为超时哨兵值，不参与分析）。"
@@ -725,6 +731,7 @@ function renderRawDescription(){
   const ob="<table style='width:auto'>"
     +kv("被试文件数",R.nFiles+" 份（每名被试 1 份）")
     +kv("试次总数",R.nTrials+" 个（每名被试 "+(R.nMin===R.nMax?R.nMax:R.nMin+"–"+R.nMax)+" 个）")
+    +kv("分条件试次数（范围）","一致 "+(R.conMin===R.conMax?R.conMin:R.conMin+"–"+R.conMax)+" / 不一致 "+(R.incMin===R.incMax?R.incMin:R.incMin+"–"+R.incMax))
     +kv("区块",R.blocksAll.join("、"))
     +kv("采集时段",R.sess)
     +kv("条件分布","一致 "+R.nCon+" / 不一致 "+R.nInc)
@@ -740,7 +747,7 @@ function renderRawDescription(){
   R.per.forEach(p=>{
     pt+="<tr><td class='l'>"+p.label+"</td><td>"+p.n+"</td><td>"+p.st[1]+"</td><td>"+p.st[2]+"</td><td>"+p.st[3]+"</td><td>"+F1(p.errRate)+"%</td></tr>";
   });
-  pt+="<tr style='font-weight:700;background:#f9fafb'><td class='l'>合计 / 组平均</td><td>"+R.nTrials+"</td><td>"+R.status[1]+"</td><td>"+R.status[2]+"</td><td>"+R.status[3]+"</td><td>"+F1(R.status[2]+R.status[3])+"%</td></tr>";
+  pt+="<tr style='font-weight:700;background:#f9fafb'><td class='l'>合计 / 组平均</td><td>"+R.nTrials+"</td><td>"+R.status[1]+"</td><td>"+R.status[2]+"</td><td>"+R.status[3]+"</td><td>"+F1((R.status[2]+R.status[3])/R.nTrials*100)+"%</td></tr>";
   body.innerHTML="<h3 style='margin:8px 0 4px'>一、本批次数据概览</h3>"+ob
     +"<h3 style='margin:8px 0 4px'>二、每名被试的原始试次构成（未经任何清洗）</h3><div style='overflow:auto'><table>"+pt+"</table></div>"
     +"<h3 style='margin:8px 0 4px'>三、论文段落（点上方按钮可复制纯文本）</h3>"
@@ -791,15 +798,19 @@ function render(){
   charts.push(chartCard("图2 · 平均正确率","各条件正确率 = 100 − 错误率（含超时），误差线为 95% CI",
     svgBarChart([{label:"一致 Congruent",value:g.accCon,ci:g.ciAccCon,color:"#2563eb"},
                  {label:"不一致 Incongruent",value:g.accInc,ci:g.ciAccInc,color:"#dc2626"}],"正确率 (%)",true),""));
-  charts.push(chartCard("图3 · 每被试 Simon Effect","绿色=正向效应（符合理论预期），橙色=负向；虚线为组均值，紫色阴影带为 Simon effect 的 95% 置信区间（跨零即不显著）",
+  charts.push(chartCard("图3 · 平均错误率","各条件错误率 =（按错 + 超时）÷ 该条件试次数 × 100%，误差线为 95% CI（被试间）；数值为图 2 平均正确率的互补值",
+    svgBarChart([{label:"一致 Congruent",value:100-g.accCon,ci:g.ciAccCon,color:"#2563eb"},
+                 {label:"不一致 Incongruent",value:100-g.accInc,ci:g.ciAccInc,color:"#dc2626"}],"错误率 (%)",true),
+    '<span><i style="background:#2563eb"></i>一致</span><span><i style="background:#dc2626"></i>不一致</span><span>不一致 − 一致 = '+(g.accCon-g.accInc>0?"+":"")+F1(g.accCon-g.accInc)+' 个百分点</span>'));
+  charts.push(chartCard("图4 · 每被试 Simon Effect","绿色=正向效应（符合理论预期），橙色=负向；虚线为组均值，紫色阴影带为 Simon effect 的 95% 置信区间（跨零即不显著）",
     svgEffectChart(subs,g),""));
-  charts.push(chartCard("图4 · RT 分布直方图","组宽 100ms；仅含清洗后正确试次",
+  charts.push(chartCard("图5 · RT 分布直方图","组宽 100ms；仅含清洗后正确试次",
     svgHist(subs),'<span><i style="background:#2563eb"></i>一致</span><span><i style="background:#dc2626"></i>不一致</span>'));
-  charts.push(chartCard("图5 · RT 箱线图","箱体=四分位区间，粗线=中位数，空心点=离群试次",
+  charts.push(chartCard("图6 · RT 箱线图","箱体=四分位区间，粗线=中位数，空心点=离群试次",
     svgBox(subs),""));
-  charts.push(chartCard("图6 · Delta plot（分布分析）","Simon 任务经典分布分析：每个点为按全组 RT 五分位（慢→快）计算的效应量",
+  charts.push(chartCard("图7 · Delta plot（分布分析）","Simon 任务经典分布分析：每个点为按全组 RT 五分位（慢→快）计算的效应量",
     svgDelta(g),""));
-  charts.push(chartCard("图7 · 逐试次 RT 序列（数据质量检查）","用于检查练习效应与被剔除试次；切换被试查看",
+  charts.push(chartCard("图8 · 逐试次 RT 序列（数据质量检查）","用于检查练习效应与被剔除试次；切换被试查看",
     '<div style="text-align:right;margin-bottom:6px"><select id="seqSel">'+
     subs.map((s,i)=>'<option value="'+i+'"'+(i===state.seqIdx?" selected":"")+'">S'+(i+1)+'</option>').join("")+'</select></div>'+
     svgSequence(subs[state.seqIdx],state.seqIdx),""));

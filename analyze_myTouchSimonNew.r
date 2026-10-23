@@ -20,7 +20,7 @@ conditions = c(2)      ## 按第2列 (congruent/incongruent) 分组
 
 ## 确保工作目录为本数据文件夹
 ## (兼容 RStudio: 其默认工作目录通常是用户主目录, 需自动切换到数据文件夹)
-dataDir = "/Users/zhangxiaolan/Downloads/2周二午 5060 cognitive psy/PsyToolkitData_mySimon_2026_10_02_15_08"
+dataDir = "/Users/zhangxiaolan/Downloads/2周二午 5060 cognitive psy/PsyToolkitData_mySimon_2026_10_03_15_12"
 if (!dir.exists("experiment_data")) {
     setwd(dataDir)
 }
